@@ -18,4 +18,20 @@ public abstract class Item {
 		_id = id;
 		_name = name;
 	}
+	
+	protected int getId() {
+		return _id;
+	}
+	
+	protected void setId(int id) {
+		_id = id;
+	}
+	
+	protected String getName() {
+		return _name;
+	}
+	
+	protected void setName(String name) {
+		_name = name;
+	}
 }
