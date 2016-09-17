@@ -37,7 +37,7 @@ public class User {
 		setPassword(pass);
 		_server = null;
 		_cosmetic = null;
-		_invent = Inventory.DEFAULT;
+		_invent = new Inventory(10);
 	}
 
 	public int getId() {
@@ -62,6 +62,14 @@ public class User {
 
 	public void setPassword(String _password) {
 		this._password = _password;
+	}
+	
+	public Inventory getInventory() {
+		return _invent;
+	}
+	
+	public void setInventory(Inventory invent) {
+		_invent = invent;
 	}
 	
 }

@@ -7,8 +7,11 @@ import javax.persistence.*;
 @Entity
 public class MysteryBox extends Item {
 
-	@ManyToMany
-	@JoinTable(name = "CRATE_ITEM", joinColumns = @JoinColumn(name = "CRATE_ID", nullable = false), inverseJoinColumns = @JoinColumn(name = "ITEM_ID", nullable = false))
+	@ManyToMany(cascade = CascadeType.PERSIST)
+	@JoinTable(
+			name = "CRATE_ITEM", 
+			joinColumns = @JoinColumn(name = "CRATE_ID", nullable = false), 
+			inverseJoinColumns = @JoinColumn(name = "ITEM_ID", nullable = false))
 	private Set<Cosmetic> _contents;
 
 	protected MysteryBox() {}

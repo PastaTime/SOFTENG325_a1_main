@@ -1,6 +1,7 @@
 package io.dyname.game.test;
 
 import static org.junit.Assert.fail;
+import io.dynam.game.dto.CosmeticDTO;
 import io.dynam.game.dto.UserDTO;
 
 import java.util.ArrayList;
@@ -86,6 +87,31 @@ public class GameResourceTest {
 			
 			Response response = client.target(WEB_SERVICE_URI + "/users").request().get();
 			_logger.info("Got all users" + response.readEntity(String.class));
+			
+			_logger.info("Posting cosmetic items....");
+			
+			List<CosmeticDTO> cosmeticList = new ArrayList<CosmeticDTO>();
+			cosmeticList.add(new CosmeticDTO("Spitting Fire","fire_animator"));
+			cosmeticList.add(new CosmeticDTO("Mad Skills","skill_boost"));
+			cosmeticList.add(new CosmeticDTO("Bars","unreal_music"));
+			cosmeticList.add(new CosmeticDTO("Savage Banter","witty_humour"));
+			cosmeticList.add(new CosmeticDTO("Shade","best_thrown"));
+			for (CosmeticDTO cosmetic : cosmeticList) {
+				Response newResponse = client.target(WEB_SERVICE_URI + "/item/cosmetic")
+						.request().post(Entity.xml(cosmetic));
+				int status = newResponse.getStatus();
+				if (status != 201) {
+					_logger.error("Failed to create User; Web service responded with: "
+							+ status);
+					fail();
+				}
+				_logger.info("Successfully posted Item: " + cosmetic.toString());
+				response.close();
+			}
+			
+			_logger.info("Posting mystery box.....");
+			
+
 		} finally {
 			// Release any connection resources.
 			client.close();
