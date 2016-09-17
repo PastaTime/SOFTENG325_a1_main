@@ -1,4 +1,4 @@
-package io.dynam.player.services;
+package io.dynam.game.services;
 
 import java.util.HashSet;
 import java.util.Set;

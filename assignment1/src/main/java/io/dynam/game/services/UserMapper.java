@@ -1,7 +1,7 @@
-package io.dynam.player.services;
+package io.dynam.game.services;
 
-import io.dynam.player.domain.User;
-import io.dynam.player.dto.UserDTO;
+import io.dynam.game.domain.User;
+import io.dynam.game.dto.UserDTO;
 
 public class UserMapper {
 

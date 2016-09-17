@@ -1,4 +1,4 @@
-package io.dynam.player.domain;
+package io.dynam.game.domain;
 
 import javax.persistence.*;
 

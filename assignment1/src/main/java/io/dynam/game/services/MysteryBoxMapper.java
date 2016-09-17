@@ -1,7 +1,7 @@
-package io.dynam.player.services;
+package io.dynam.game.services;
 
-import io.dynam.player.domain.MysteryBox;
-import io.dynam.player.dto.MysteryBoxDTO;
+import io.dynam.game.domain.MysteryBox;
+import io.dynam.game.dto.MysteryBoxDTO;
 
 public class MysteryBoxMapper {
 	//do we need password in DTO?
