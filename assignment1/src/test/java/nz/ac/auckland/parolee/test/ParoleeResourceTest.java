@@ -7,6 +7,7 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.Response;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +31,7 @@ public class ParoleeResourceTest {
 	private Logger _logger = LoggerFactory.getLogger(ParoleeResourceTest.class);
 
 	@Test
+	@Ignore
 	public void testParoleeResource() {
 		// Use ClientBuilder to create a new client that can be used to create
 		// connections to the Web service.

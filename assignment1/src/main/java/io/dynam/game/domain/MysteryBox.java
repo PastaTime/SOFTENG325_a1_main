@@ -11,6 +11,8 @@ public class MysteryBox extends Item {
 	@JoinTable(name = "CRATE_ITEM", joinColumns = @JoinColumn(name = "CRATE_ID", nullable = false), inverseJoinColumns = @JoinColumn(name = "ITEM_ID", nullable = false))
 	private Set<Cosmetic> _contents;
 
+	protected MysteryBox() {}
+	
 	public MysteryBox(String name) {
 		super(0, name);
 	}

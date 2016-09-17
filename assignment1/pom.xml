@@ -54,6 +54,13 @@
 			<version>3.0.12.Final</version>
 		</dependency>
 		
+		   <!-- RESTEasy JAXB provider -->
+        <dependency>
+			<groupId>org.jboss.resteasy</groupId>
+			<artifactId>resteasy-jaxb-provider</artifactId>
+			<version>3.0.12.Final</version>
+		</dependency>
+		
 		<!-- Joda date/time library -->
         <dependency>
 			<groupId>joda-time</groupId>
@@ -79,6 +86,12 @@
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-log4j12</artifactId>
 			<version>1.7.12</version>
+		</dependency>
+		<!-- H2 embedded database. -->
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<version>1.4.187</version>
 		</dependency>
 	</dependencies>
 

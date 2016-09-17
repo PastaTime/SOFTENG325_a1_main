@@ -22,6 +22,8 @@ public class UserDTO {
 	@XmlElement(name="pass")
 	private String _password;
 	
+	protected UserDTO() {}
+	
 	public UserDTO(String username, String password) {
 		this(0, username, password);
 	}

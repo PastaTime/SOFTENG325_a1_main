@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
  */
 public class GameResourceTest {
 
-	private static String WEB_SERVICE_URI = "http://localhost:10000/services/parolees";
+	private static String WEB_SERVICE_URI = "http://localhost:10000/services/game";
 
 	private Logger _logger = LoggerFactory.getLogger(GameResourceTest.class);
 
@@ -55,11 +55,12 @@ public class GameResourceTest {
 				Response response = client.target(WEB_SERVICE_URI + "/user")
 						.request().post(Entity.xml(user));
 				int status = response.getStatus();
-				if (status != 201) {
+				if (status != 200) {
 					_logger.error("Failed to create User; Web service responded with: "
 							+ status);
 					fail();
 				}
+				_logger.info("Successfully posted User: " + user.toString());
 				response.close();
 			}
 
@@ -69,6 +70,7 @@ public class GameResourceTest {
 				NewCookie cookie = new NewCookie("user", user.getName());
 				UserDTO foundUser = client.target(WEB_SERVICE_URI + "/user")
 						.request().cookie(cookie).get(UserDTO.class);
+				user.setId(foundUser.getId());
 				if (!foundUser.equals(user)) {
 					_logger.error("Failed to return the expected User. Expected: "
 							+ user.toString()

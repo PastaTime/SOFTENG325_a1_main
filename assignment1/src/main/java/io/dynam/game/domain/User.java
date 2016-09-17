@@ -17,8 +17,9 @@ public class User {
 	
 	private Location  _loc;
 	
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(nullable = false)
+	@ManyToOne(fetch = FetchType.LAZY,
+			cascade = CascadeType.PERSIST)
+	@JoinColumn
 	private Cosmetic _cosmetic;
 	
 	@Embedded
@@ -31,7 +32,7 @@ public class User {
 		setName(name);
 		setPassword(pass);
 		_loc = Location.DEFAULT;
-		_cosmetic = Cosmetic.DEFAULT;
+		_cosmetic = null;
 		_invent = Inventory.DEFAULT;
 	}
 
