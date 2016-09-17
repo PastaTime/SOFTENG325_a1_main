@@ -12,6 +12,7 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,9 +32,11 @@ import org.slf4j.LoggerFactory;
 public class GameResourceTest {
 
 	private static String WEB_SERVICE_URI = "http://localhost:10000/services/game";
+	
+	private static boolean setup = true;
 
 	private Logger _logger = LoggerFactory.getLogger(GameResourceTest.class);
-
+	
 	@Test
 	public void testGameResource() {
 		// Use ClientBuilder to create a new client that can be used to create
@@ -42,7 +45,7 @@ public class GameResourceTest {
 
 		try {
 
-			_logger.info("Posting Users");
+			_logger.info("Posting Users.....");
 
 			List<UserDTO> userList = new ArrayList<UserDTO>();
 			userList.add(new UserDTO("Arran", "pass1"));
@@ -55,7 +58,7 @@ public class GameResourceTest {
 				Response response = client.target(WEB_SERVICE_URI + "/user")
 						.request().post(Entity.xml(user));
 				int status = response.getStatus();
-				if (status != 200) {
+				if (status != 201) {
 					_logger.error("Failed to create User; Web service responded with: "
 							+ status);
 					fail();
@@ -64,12 +67,11 @@ public class GameResourceTest {
 				response.close();
 			}
 
-			_logger.info("Getting Users");
+			_logger.info("Getting Users......");
 
 			for (UserDTO user : userList) {
-				NewCookie cookie = new NewCookie("user", user.getName());
-				UserDTO foundUser = client.target(WEB_SERVICE_URI + "/user")
-						.request().cookie(cookie).get(UserDTO.class);
+				UserDTO foundUser = client.target(WEB_SERVICE_URI + "/user/" + user.getName())
+						.request().get(UserDTO.class);
 				user.setId(foundUser.getId());
 				if (!foundUser.equals(user)) {
 					_logger.error("Failed to return the expected User. Expected: "
@@ -79,6 +81,11 @@ public class GameResourceTest {
 					fail();
 				}
 			}
+			
+			_logger.info("Requesting all Users.....");
+			
+			Response response = client.target(WEB_SERVICE_URI + "/users").request().get();
+			_logger.info("Got all users" + response.readEntity(String.class));
 		} finally {
 			// Release any connection resources.
 			client.close();

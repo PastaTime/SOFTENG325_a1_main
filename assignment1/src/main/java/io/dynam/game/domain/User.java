@@ -15,7 +15,11 @@ public class User {
 	@Column(name="PASS", nullable = false)
 	private String _password;
 	
-	private Location  _loc;
+	@ManyToOne(cascade = CascadeType.PERSIST)
+	@JoinTable(
+			name = "USER_SERVER",
+			joinColumns = @JoinColumn(unique = true))
+	private Server _server;
 	
 	@ManyToOne(fetch = FetchType.LAZY,
 			cascade = CascadeType.PERSIST)
@@ -31,7 +35,7 @@ public class User {
 		setId(id);
 		setName(name);
 		setPassword(pass);
-		_loc = Location.DEFAULT;
+		_server = null;
 		_cosmetic = null;
 		_invent = Inventory.DEFAULT;
 	}

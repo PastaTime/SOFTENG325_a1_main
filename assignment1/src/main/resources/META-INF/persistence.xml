@@ -26,7 +26,7 @@
 		<class>io.dynam.player.domain.Cosmetic</class>
 		<class>io.dynam.player.domain.Inventory</class>
 		<class>io.dynam.player.domain.Item</class>
-		<class>io.dynam.player.domain.Location</class>
+		<class>io.dynam.player.domain.Server</class>
 		<class>io.dynam.player.domain.MysteryBox</class>
 
 		<properties>
