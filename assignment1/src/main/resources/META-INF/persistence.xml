@@ -20,7 +20,7 @@
 	     
 	     www.h2database.com -->
 	     
-	<persistence-unit name="io.dynam.player">
+	<persistence-unit name="io.dynam.game">
 		<!--  Classes which are to be mapped and therefore persistent. -->
 		<class>io.dynam.player.domain.User</class>
 		<class>io.dynam.player.domain.Cosmetic</class>

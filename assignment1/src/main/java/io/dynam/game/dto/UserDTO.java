@@ -6,6 +6,9 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+
 @XmlRootElement(name="user")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class UserDTO {
@@ -53,6 +56,42 @@ public class UserDTO {
 		this._password = _password;
 	}
 	
+	@Override
+	public String toString() {
+		StringBuffer buffer = new StringBuffer();
+		buffer.append("UserDTO: (");
+		buffer.append(_id);
+		buffer.append(", ");
+		buffer.append(_name);
+		buffer.append(", ");
+		buffer.append(_password);
+		buffer.append(")");
+		return buffer.toString();
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if (!(obj instanceof UserDTO))
+            return false;
+        if (obj == this)
+            return true;
+
+        UserDTO rhs = (UserDTO) obj;
+        return new EqualsBuilder().
+            append(_id, rhs._id).
+            append(_name, rhs._name).
+            append(_password, rhs._password).
+            isEquals();
+	}
+	
+	@Override
+	public int hashCode() {
+		return new HashCodeBuilder(17, 31). 
+	            append(_id).
+	            append(_name).
+	            append(_password).
+	            toHashCode();
+	}
 	
 	
 
