@@ -1,4 +1,4 @@
-package io.dynam.game.services;
+package io.dynam.game.utils;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,4 +1,4 @@
-package io.dynam.game.services;
+package io.dynam.game.utils;
 
 import io.dynam.game.domain.MysteryBox;
 import io.dynam.game.dto.MysteryBoxDTO;

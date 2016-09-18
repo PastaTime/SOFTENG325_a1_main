@@ -1,4 +1,4 @@
-package io.dynam.game.services;
+package io.dynam.game.utils;
 
 import java.util.List;
 
@@ -14,16 +14,17 @@ import javax.persistence.NoResultException;
 import javax.persistence.Persistence;
 import javax.persistence.TypedQuery;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Response;
 
 public class PersistenceManager {
 	
-	private static EntityManagerFactory _em = null;
+	private static EntityManagerFactory _factory = null;
 	
 	public static EntityManagerFactory getFactory() {
-		if (_em == null) {
-			_em = Persistence.createEntityManagerFactory("io.dynam.game");
+		if (_factory == null) {
+			_factory = Persistence.createEntityManagerFactory("io.dynam.game");
 		}
-		return _em;
+		return _factory;
 	}
 	
 	public static Cosmetic getCosmeticByName(String name) {

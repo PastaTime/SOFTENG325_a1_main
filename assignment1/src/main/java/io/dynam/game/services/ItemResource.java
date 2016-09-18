@@ -1,4 +1,4 @@
-package io.dynam.game.services.item;
+package io.dynam.game.services;
 
 
 import java.net.URI;
@@ -14,10 +14,10 @@ import io.dynam.game.domain.User;
 import io.dynam.game.dto.CosmeticDTO;
 import io.dynam.game.dto.MysteryBoxDTO;
 import io.dynam.game.dto.UserDTO;
-import io.dynam.game.services.CosmeticMapper;
-import io.dynam.game.services.MysteryBoxMapper;
-import io.dynam.game.services.PersistenceManager;
-import io.dynam.game.services.UserMapper;
+import io.dynam.game.utils.CosmeticMapper;
+import io.dynam.game.utils.MysteryBoxMapper;
+import io.dynam.game.utils.PersistenceManager;
+import io.dynam.game.utils.UserMapper;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;

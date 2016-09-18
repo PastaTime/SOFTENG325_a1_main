@@ -1,7 +1,7 @@
 package io.dynam.game.dto;
 
 import io.dynam.game.domain.Cosmetic;
-import io.dynam.game.services.CosmeticMapper;
+import io.dynam.game.utils.CosmeticMapper;
 
 import java.util.HashSet;
 import java.util.Set;

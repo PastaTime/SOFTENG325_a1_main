@@ -19,19 +19,19 @@ public abstract class Item {
 		_name = name;
 	}
 	
-	protected int getId() {
+	public int getId() {
 		return _id;
 	}
 	
-	protected void setId(int id) {
+	public void setId(int id) {
 		_id = id;
 	}
 	
-	protected String getName() {
+	public String getName() {
 		return _name;
 	}
 	
-	protected void setName(String name) {
+	public void setName(String name) {
 		_name = name;
 	}
 }
