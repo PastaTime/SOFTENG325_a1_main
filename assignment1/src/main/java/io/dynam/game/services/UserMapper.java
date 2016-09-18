@@ -6,14 +6,14 @@ import io.dynam.game.dto.UserDTO;
 public class UserMapper {
 
 	//do we need password in DTO?
-	static User toDomainModel(UserDTO dtoUser) {
+	public static User toDomainModel(UserDTO dtoUser) {
 		User fullUser = new User(dtoUser.getId(), dtoUser.getName(),
 				dtoUser.getPassword());
 
 		return fullUser;
 	}
 
-	static UserDTO toDto(User user) {
+	public static UserDTO toDto(User user) {
 		UserDTO dtoUser = new UserDTO(user.getId(), user.getName(),
 				user.getPassword());
 		return dtoUser;

@@ -1,4 +1,4 @@
-package io.dynam.game.services;
+package io.dynam.game.services.user;
 
 
 import java.net.URI;
@@ -8,12 +8,19 @@ import java.util.List;
 import java.util.Set;
 
 import io.dynam.game.domain.Cosmetic;
+import io.dynam.game.domain.Inventory;
 import io.dynam.game.domain.Item;
 import io.dynam.game.domain.MysteryBox;
 import io.dynam.game.domain.User;
 import io.dynam.game.dto.CosmeticDTO;
+import io.dynam.game.dto.InventoryDTO;
 import io.dynam.game.dto.MysteryBoxDTO;
 import io.dynam.game.dto.UserDTO;
+import io.dynam.game.services.CosmeticMapper;
+import io.dynam.game.services.InventoryMapper;
+import io.dynam.game.services.MysteryBoxMapper;
+import io.dynam.game.services.PersistenceManager;
+import io.dynam.game.services.UserMapper;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -60,40 +67,23 @@ import org.slf4j.LoggerFactory;
  * - PUT    <base-uri>/user/{name}
  * 			TODO: updates a users password (XML containing new and old password?)
  * * Inventory
- * 		TODO:
  * - GET	<base-uri>/user/{name}/inventory/{item}
  * 			retrieves an item from a users inventory
- * 		TODO:	
  * - GET	<base-uri>/user/{name}/inventory
- * 			retrieves all items from a users inventory
- * 		TODO:
+ * 			retrieves a users inventory
  * - POST	<base-uri>/user/{name}/inventory
  * 			Adds an item to the users inventory
  * 		TODO:
  * - DEL	<base-uri>/user/{name}/inventory/{item}
  * 			Deletes an item from the users inventory
- * * Items
- * 		TODO:
- * - GET	<base-uri>/item/cosmetic/{name}
- * 			retrieves a cosmetic item by its name
- * 		TODO:
- * - GET	<base-uri>/item/mystery/{name}
- * 			retrieves a myster box by its name
- * 		TODO:
- * - POST	<base-uri>/item/cosmetic
- * 			posts a cosmetic item
- * 		TODO:
- * - POST	<base-uri>/item/mystery
- * 			posts a mystery box
  * 
  */
 @Path("/game")
-public class GameResource {
+public class UserResource {
 	//TODO: implement proper logging
 	private static Logger _logger = LoggerFactory
-			.getLogger(GameResource.class);
-	private static EntityManagerFactory _factory = Persistence
-			.createEntityManagerFactory("io.dynam.game");
+			.getLogger(UserResource.class);
+	private static EntityManagerFactory _factory = PersistenceManager.getFactory();
 	
 	@GET
 	@Path("/login")
@@ -127,17 +117,7 @@ public class GameResource {
 	@Produces("application/xml")
 	public UserDTO getUser(@PathParam("name") String username) {
 		//TODO: Implement user login security
-		EntityManager em = _factory.createEntityManager();
-		User user = null;
-		try {
-			TypedQuery<User> query = em.createQuery(
-					"from User u where u._name = :uname", User.class)
-					.setParameter("uname", username);
-			user = query.getSingleResult();
-		} catch (NoResultException e) {
-			throw new WebApplicationException(404);
-		}
-		
+		User user = PersistenceManager.getUserByName(username);
 		UserDTO dtoUser = UserMapper.toDto(user);
 
 		return dtoUser;
@@ -222,116 +202,29 @@ public class GameResource {
 		}
 	}
 	
+	@GET
+	@Path("/user/{name}/inventory")
+	@Produces("application/xml")
+	public InventoryDTO getUserInventory(@PathParam("name") String username) {
+		Inventory invent = PersistenceManager.getUserInventory(username);
+		return InventoryMapper.toDto(invent);
+	}
+	
 	@POST
 	@Path("/user/{name}/inventory")
 	@Produces("application/xml")
 	public Response giveUserCosmetic(@PathParam("name") String username, CosmeticDTO dtoCosmetic) {
-		EntityManager em = _factory.createEntityManager();
-		User user = null;
-		try {
-			TypedQuery<User> query = em.createQuery(
-					"from User u where u._name = :uname", User.class)
-					.setParameter("uname", username);
-			user = query.getSingleResult();
-		} catch (NoResultException e) {
-			throw new WebApplicationException(404);
-		}
+		User user = PersistenceManager.getUserByName(username);
 		Cosmetic cosmetic = CosmeticMapper.toDomainModel(dtoCosmetic);
 		Set<Item> newItems = user.getInventory().getItems();
 		if (!newItems.add(cosmetic)) {
 			return Response.status(400).entity("User already has Item").build();
 		}
+		EntityManager em = _factory.createEntityManager();
 		em.getTransaction().begin();
 		em.merge(user);
 		em.getTransaction().commit();
 		em.close();
 		return Response.created(URI.create("/user/" + user.getName() + "/inventory")).build();
-	}
-	
-	 /* * Items
-	 * 		TODO:
-	 * - GET	<base-uri>/item/cosmetic/{name}
-	 * 			retrieves a cosmetic item by its name
-	 * 		TODO:
-	 * - GET	<base-uri>/item/mystery/{name}
-	 * 			retrieves a myster box by its name
-	 * 		TODO:
-	 * - POST	<base-uri>/item/cosmetic
-	 * 			posts a cosmetic item
-	 * 		TODO:
-	 * - POST	<base-uri>/item/mystery
-	 * 			posts a mystery box
-	 * 
-	 */
-	
-	@GET
-	@Path("/item/cosmetic/{name}")
-	@Consumes("application/xml")
-	public CosmeticDTO getCosmeticItem(@PathParam("name") String itemName) {
-		EntityManager em = _factory.createEntityManager();
-		Cosmetic cosmetic = null;
-		try {
-			TypedQuery<Cosmetic> query = em.createQuery(
-					"from Cosmetic c where c._name = :iname", Cosmetic.class)
-					.setParameter("iname", itemName);
-			cosmetic = query.getSingleResult();
-		} catch (NoResultException e) {
-			throw new WebApplicationException(404);
-		}
-		em.close();
-		return CosmeticMapper.toDto(cosmetic);
-	}
-	
-	@GET
-	@Path("/item/mystery/{name}")
-	@Consumes("application/xml")
-	public MysteryBoxDTO getMysteryBox(@PathParam("name") String boxName) {
-		EntityManager em = _factory.createEntityManager();
-		MysteryBox mysteryBox = null;
-		try {
-			TypedQuery<MysteryBox> query = em.createQuery(
-					"from Cosmetic c where c._name = :iname", MysteryBox.class)
-					.setParameter("iname", boxName);
-			mysteryBox = query.getSingleResult();
-		} catch (NoResultException e) {
-			throw new WebApplicationException(404);
-		}
-		
-		return MysteryBoxMapper.toDto(mysteryBox);
-	}
-	
-	@POST
-	@Path("/item/cosmetic")
-	@Consumes("application/xml")
-	public Response createCosmeticItem(CosmeticDTO dtoCosmetic) {
-		EntityManager em = _factory.createEntityManager();
-		Cosmetic cosmetic = CosmeticMapper.toDomainModel(dtoCosmetic);
-		try {
-			em.getTransaction().begin();
-			em.persist(cosmetic);
-			em.getTransaction().commit();
-			em.close();
-		} catch (PersistenceException e) {
-			return Response.status(400).entity(e.getMessage()).build();
-		}
-		return Response.created(URI.create("/item/cosmetic/" + cosmetic.getName())).build();
-	}
-	
-	@POST
-	@Path("/item/mystery")
-	@Consumes("application/xml")
-	public Response createMysteryBox(MysteryBoxDTO dtoMysteryBox) {
-		
-		EntityManager em = _factory.createEntityManager();
-		MysteryBox mysteryBox = MysteryBoxMapper.toDomainModel(dtoMysteryBox);
-		try {
-			em.getTransaction().begin();
-			em.persist(mysteryBox);
-			em.getTransaction().commit();
-			em.close();
-		} catch (PersistenceException e) {
-			return Response.status(400).entity(e.getMessage()).build();
-		}
-		return Response.created(URI.create("/item/mystery/" + mysteryBox.getName())).build();
 	}
 }

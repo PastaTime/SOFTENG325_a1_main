@@ -1,5 +1,8 @@
 package io.dynam.game.services;
 
+import io.dynam.game.services.item.ItemResource;
+import io.dynam.game.services.user.UserResource;
+
 import java.util.HashSet;
 import java.util.Set;
 
@@ -15,7 +18,8 @@ public class GameApplication extends Application {
 	private Set<Class<?>> classes = new HashSet<Class<?>>();
 
 	public GameApplication() {
-		singletons.add(new GameResource());
+		singletons.add(new UserResource());
+		singletons.add(new ItemResource());
 //		classes.add(GameResolver.class);
 		//Set up default values
 	}

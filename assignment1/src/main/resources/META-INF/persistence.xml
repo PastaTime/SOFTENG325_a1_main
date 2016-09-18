@@ -22,12 +22,12 @@
 	     
 	<persistence-unit name="io.dynam.game">
 		<!--  Classes which are to be mapped and therefore persistent. -->
-		<class>io.dynam.player.domain.User</class>
-		<class>io.dynam.player.domain.Cosmetic</class>
-		<class>io.dynam.player.domain.Inventory</class>
-		<class>io.dynam.player.domain.Item</class>
-		<class>io.dynam.player.domain.Server</class>
-		<class>io.dynam.player.domain.MysteryBox</class>
+		<class>io.dynam.game.domain.User</class>
+		<class>io.dynam.game.domain.Cosmetic</class>
+		<class>io.dynam.game.domain.Inventory</class>
+		<class>io.dynam.game.domain.Item</class>
+		<class>io.dynam.game.domain.Server</class>
+		<class>io.dynam.game.domain.MysteryBox</class>
 
 		<properties>
 			<!--  Configure the data source. In this case the embedded H2 database

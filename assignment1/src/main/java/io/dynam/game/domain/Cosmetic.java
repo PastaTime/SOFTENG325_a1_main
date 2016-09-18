@@ -17,13 +17,13 @@ public class Cosmetic extends Item {
 	protected Cosmetic() {}
 	
 	public Cosmetic(String name, String assetName) {
-		this(0, name, assetName);
+		this(0, name.replace(' ','_'), assetName.replace(' ','_'));
 	}
 	
 	
 	public Cosmetic(int id, String name, String assetName) {
-		super(id, name);
-		_internalName = assetName;
+		super(id, name.replace(' ','_'));
+		_internalName = assetName.replace(' ','_');
 		_inUse  = new HashSet<User>();
 	}
 

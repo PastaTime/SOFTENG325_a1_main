@@ -21,8 +21,12 @@ public class Inventory {
 	protected Inventory() {}
 	
 	public Inventory(int size) {
-		_inventoryCapacity = size;
-		_items = new HashSet<Item>();
+		this(size, new HashSet<Item> ());
+	}
+	
+	public Inventory(int size, Set<Item> items) {
+		setCapacity(size);
+		setItems(items);
 	}
 	
 	public int getCapacity() {

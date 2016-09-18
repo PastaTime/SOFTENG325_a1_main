@@ -2,6 +2,7 @@ package io.dyname.game.test;
 
 import static org.junit.Assert.fail;
 import io.dynam.game.dto.CosmeticDTO;
+import io.dynam.game.dto.MysteryBoxDTO;
 import io.dynam.game.dto.UserDTO;
 
 import java.util.ArrayList;
@@ -85,21 +86,26 @@ public class GameResourceTest {
 			
 			_logger.info("Requesting all Users.....");
 			
-			Response response = client.target(WEB_SERVICE_URI + "/users").request().get();
-			_logger.info("Got all users" + response.readEntity(String.class));
+			if (true) {
+				Response response = client.target(WEB_SERVICE_URI + "/users").request().get();
+				_logger.info("Got all users" + response.readEntity(String.class));
+			}
 			
 			_logger.info("Posting cosmetic items....");
 			
 			List<CosmeticDTO> cosmeticList = new ArrayList<CosmeticDTO>();
-			cosmeticList.add(new CosmeticDTO("Spitting Fire","fire_animator"));
 			cosmeticList.add(new CosmeticDTO("Mad Skills","skill_boost"));
+			cosmeticList.add(new CosmeticDTO("Spitting Fire","fire_animator"));
 			cosmeticList.add(new CosmeticDTO("Bars","unreal_music"));
 			cosmeticList.add(new CosmeticDTO("Savage Banter","witty_humour"));
 			cosmeticList.add(new CosmeticDTO("Shade","best_thrown"));
 			for (CosmeticDTO cosmetic : cosmeticList) {
-				Response newResponse = client.target(WEB_SERVICE_URI + "/item/cosmetic")
+				_logger.info("Starting cosmetic post");
+				Response response = client.target(WEB_SERVICE_URI + "/item/cosmetic")
 						.request().post(Entity.xml(cosmetic));
-				int status = newResponse.getStatus();
+				
+				_logger.info("cosmetic posted");
+				int status = response.getStatus();
 				if (status != 201) {
 					_logger.error("Failed to create User; Web service responded with: "
 							+ status);
@@ -109,7 +115,104 @@ public class GameResourceTest {
 				response.close();
 			}
 			
+			
+			_logger.info("Requesting Cosmetic items...");
+			for (CosmeticDTO cosmetic : cosmeticList) {
+				CosmeticDTO foundCosmetic = client.target(WEB_SERVICE_URI + "/item/cosmetic/" + cosmetic.getName())
+						.request().get(CosmeticDTO.class);
+				cosmetic.setId(foundCosmetic.getId());
+				if (!foundCosmetic.equals(cosmetic)) {
+					_logger.error("Failed to return the expected User. Expected: "
+							+ cosmetic.toString()
+							+ ", Actual: "
+							+ foundCosmetic.toString());
+					fail();
+				}
+			}
+			
+			
 			_logger.info("Posting mystery box.....");
+			
+			List<MysteryBoxDTO> mysteryBoxList = new ArrayList<MysteryBoxDTO>();
+			mysteryBoxList.add(new MysteryBoxDTO("Meme Box 2k16"));
+			mysteryBoxList.add(new MysteryBoxDTO("Team Rocket Starter Pack"));
+			mysteryBoxList.add(new MysteryBoxDTO("What u kno bout it"));
+			
+			for (MysteryBoxDTO mysteryBox: mysteryBoxList) {
+				Response response = client.target(WEB_SERVICE_URI + "/item/mysterybox")
+						.request().post(Entity.xml(mysteryBox));
+				int status = response.getStatus();
+				if (status != 201) {
+					_logger.error("Failed to create User; Web service responded with: "
+							+ status);
+					fail();
+				}
+				_logger.info("Successfully posted Mystery Box: " + mysteryBox.toString());
+				response.close();
+			}
+			
+			_logger.info("Requesting Mystery Boxes items...");
+			
+			for (MysteryBoxDTO mysteryBox : mysteryBoxList) {
+				MysteryBoxDTO foundMysteryBox = client.target(WEB_SERVICE_URI + "/item/mysterybox/" + mysteryBox.getName())
+						.request().get(MysteryBoxDTO.class);
+				mysteryBox.setId(foundMysteryBox.getId());
+				if (!foundMysteryBox.equals(mysteryBox)) {
+					_logger.error("Failed to return the expected User. Expected: "
+							+ mysteryBox.toString()
+							+ ", Actual: "
+							+ foundMysteryBox.toString());
+					fail();
+				}
+			}
+			
+			_logger.info("Posting cosmetics to Mystery Boxes.....");
+			for (CosmeticDTO dtoCosmetic: cosmeticList) {
+				Response response = client.target(WEB_SERVICE_URI + "/item/mysterybox/" + mysteryBoxList.get(0).getName())
+						.request().post(Entity.xml(dtoCosmetic));
+				int status = response.getStatus();
+				if (status != 201) {
+					_logger.error("Failed to create User; Web service responded with: "
+							+ status);
+					fail();
+				}
+				_logger.info("Successfully posted Cosmetic: " + dtoCosmetic.toString() + " to MysteryBox: " + mysteryBoxList.get(0).toString());
+				response.close();
+			}
+			
+			_logger.info("Getting contents of MysteryBox......");
+			if (true) {
+				Response response = client.target(WEB_SERVICE_URI + "/item/mysterybox/" + mysteryBoxList.get(0).getName() + "/contents").request().get();
+				_logger.info("Got all contents in MysteryBox" + response.readEntity(String.class));
+			}
+			
+			_logger.info("Getting Single contents of MysteryBox......");
+			if (true) {
+				Response response = client.target(WEB_SERVICE_URI + "/item/mysterybox/" + mysteryBoxList.get(0).getName() + "/contents?search=Mad_Skills").request().get();
+				_logger.info("Got Single contents in MysteryBox" + response.readEntity(String.class));
+			}
+			
+			
+			_logger.info("Posting items to User .... ");
+			for (CosmeticDTO dtoCosmetic: cosmeticList) {
+				Response response = client.target(WEB_SERVICE_URI + "/user/" + userList.get(0).getName() + "/inventory")
+						.request().post(Entity.xml(dtoCosmetic));
+				int status = response.getStatus();
+				if (status != 201) {
+					_logger.error("Failed to create User; Web service responded with: "
+							+ status);
+					fail();
+				}
+				_logger.info("Successfully posted Cosmetic: " + dtoCosmetic.toString() + " to user: " + userList.get(0).getName());
+				response.close();
+			}
+			
+			_logger.info("Getting User inventory .... ");
+			
+			if (true) {
+				Response response = client.target(WEB_SERVICE_URI + "/user/" + userList.get(0).getName() + "/inventory").request().get();
+				_logger.info("Got the users inventory" + response.readEntity(String.class));
+			}
 			
 
 		} finally {
