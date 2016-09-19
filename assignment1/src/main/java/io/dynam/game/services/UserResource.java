@@ -88,13 +88,11 @@ import org.slf4j.LoggerFactory;
  * * Inventory
  * 
  * - POST	<base-uri>/user/{name}/inventory
- * 			Adds a cosmetic item to the users inventory (via CosmeticDTO payload)
- * - POST	<base-uri>/user/{name}/inventory
- * 			Adds a myster box to the users inventory (via MysteryBoxDTO payload)
+ * 			Adds a cosmetic item to the users inventory
  * - GET	<base-uri>/user/{name}/inventory/{item}
  * 			retrieves an item from a users inventory by name
  * - GET	<base-uri>/user/{name}/inventory
- * 			retrieves a users inventory
+ * 			retrieves all items from a users inventory
  * - DEL	<base-uri>/user/{name}/inventory
  * 			Deletes an item from the users inventory
  * - DEL	<base-uri>/user/{name}/inventory/{item}
@@ -194,8 +192,9 @@ public class UserResource {
 		} else {
 			EntityManager em = _factory.createEntityManager();
 			em.getTransaction().begin();
+			user = em.find(User.class, user.getId());
 			user.setPassword(dtoUser.getPassword());
-			em.merge(user);
+			em.persist(user);
 			em.getTransaction().commit();
 			em.close();
 			return Response.ok().entity(UserMapper.toDto(user)).build();
@@ -319,9 +318,14 @@ public class UserResource {
 	@GET
 	@Path("/user/{name}/inventory")
 	@Produces("application/xml")
-	public InventoryDTO getUserInventory(@PathParam("name") String username) {
-		Inventory invent = PersistenceManager.getUserInventory(username);
-		return InventoryMapper.toDto(invent);
+	public List<ItemDTO> getUserInventory(@PathParam("name") String username) {
+		List<ItemDTO> dtoItemList = new ArrayList<ItemDTO>();
+		EntityManager em = _factory.createEntityManager();
+		User user = em.find(User.class,PersistenceManager.getUserByName(username).getId());
+		for (Item item : user.getInventory().getItems()) {
+			dtoItemList.add(ItemMapper.toDto(item));
+		}
+		return dtoItemList;
 	}
 	
 	/**
@@ -333,11 +337,11 @@ public class UserResource {
 	@GET
 	@Path("/user/{name}/inventory/{item}")
 	@Produces("application/xml")
-	public Response getUserItem(@PathParam("name") String username, @PathParam("item") String itemName) {
+	public ItemDTO getUserItem(@PathParam("name") String username, @PathParam("item") String itemName) {
 		Inventory invent = PersistenceManager.getUserInventory(username);
 		for (Item item : invent.getItems()) {
 			if (item.getName().equals(itemName)) {
-				return Response.ok().entity(ItemMapper.toDto(item)).build();
+				return ItemMapper.toDto(item);
 			}
 		}
 		throw new WebApplicationException(404);
@@ -355,9 +359,10 @@ public class UserResource {
 	public Response deleteUserInventory(@PathParam("name") String username) {
 		EntityManager em = _factory.createEntityManager();
 		em.getTransaction().begin();
-		Inventory invent = PersistenceManager.getUserInventory(username);
-		invent.getItems().clear();
-		em.merge(invent);
+		User user = PersistenceManager.getUserByName(username);
+		User syncedUser = em.find(User.class, user.getId());
+		syncedUser.clearInventory();
+		em.persist(syncedUser);
 		em.getTransaction().commit();
 		em.close();
 		return Response.ok().build();
@@ -375,14 +380,19 @@ public class UserResource {
 	public Response deleteUserInventoryItem(@PathParam("name") String username, @PathParam("item") String itemName) {
 		EntityManager em = _factory.createEntityManager();
 		em.getTransaction().begin();
-		Inventory invent = PersistenceManager.getUserInventory(username);
+		User user = PersistenceManager.getUserByName(username);
+		User syncedUser = em.find(User.class, user.getId());
+		Inventory invent = syncedUser.getInventory();
+		int itemId = 0;
 		for (Item item : invent.getItems()) {
 			if (item.getName().equals(itemName)) {
-				invent.getItems().remove(item);
+				itemId = item.getId();
 				break;
 			}
 		}
-		em.merge(invent);
+		Item item = em.find(Item.class, itemId);
+		syncedUser.removeFromInventory(item);
+		em.persist(syncedUser);
 		em.getTransaction().commit();
 		em.close();
 		return Response.ok().build();

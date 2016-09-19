@@ -31,6 +31,7 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.CookieParam;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -49,32 +50,29 @@ import org.slf4j.LoggerFactory;
 /**
  * Base-URI: http//localhost:1000/services/game
  * 
- * * Inventory
- * 		TODO:
- * - GET	<base-uri>/user/{name}/inventory/{item}
- * 			retrieves an item from a users inventory
- * 		TODO:	
- * - GET	<base-uri>/user/{name}/inventory
- * 			retrieves all items from a users inventory
- * 		TODO:
- * - POST	<base-uri>/user/{name}/inventory
- * 			Adds an item to the users inventory
- * 		TODO:
- * - DEL	<base-uri>/user/{name}/inventory/{item}
- * 			Deletes an item from the users inventory
  * * Items
- * 		TODO:
  * - GET	<base-uri>/item/cosmetic/{name}
  * 			retrieves a cosmetic item by its name
- * 		TODO:
  * - GET	<base-uri>/item/mystery/{name}
- * 			retrieves a myster box by its name
- * 		TODO:
+ * 			retrieves a mystery box by its name
  * - POST	<base-uri>/item/cosmetic
  * 			posts a cosmetic item
- * 		TODO:
  * - POST	<base-uri>/item/mystery
  * 			posts a mystery box
+ * - POST 	<base-uri>/item/mysterybox/{name}
+ * 			posts a cosmetic to a mysterybox
+ * - GET	<base-uri>/item/mysterybox/{name}/contents
+ * 			retrieves the contents of a mysterybox
+ * - DEL	<base-uri>/item/mysterybox/{name}
+ * 			Deletes a mystery box by name
+ * - DEL	<base-uri>/item/mystery
+ * 			Deletes all mystery boxs
+ * - DEL	<base-uri>/item/cosmetic/{name
+ * 			Deletes a cosmetic by name
+ * - DEL	<base-uri>/item/cosmetic
+ * 			Deletes all cosmetics
+ * - DEL	<base-uri>/item
+ * 			Deletes all items
  * 
  */
 @Path("/game")
@@ -84,22 +82,25 @@ public class ItemResource {
 			.getLogger(ItemResource.class);
 	private static EntityManagerFactory _factory = PersistenceManager.getFactory();
 	
-	 /* * Items
-	 * - GET	<base-uri>/item/cosmetic/{name}
-	 * 			retrieves a cosmetic item by its name
-	 * - GET	<base-uri>/item/mysterybox/{name}
-	 * 			retrieves a mystery box by its name
-	 * - POST	<base-uri>/item/cosmetic
-	 * 			posts a cosmetic item
-	 * - POST	<base-uri>/item/mysterybox
-	 * 			posts a mystery box (empty)
-	 * 
-	 ** Mystery Box
-	 * - GET 	<base-uri>/item/mysterybox/{name}/contents?optional search
-	 * 			Gets all items in the mysterybox
-	 * - POST	<base-uri>/items/mysterybox/{name}
-	 * 			posts a cosmetic item to the mysterybox
-	 */
+	@DELETE
+	@Path("/item")
+	public Response deleteAllItems() {
+		EntityManager em = _factory.createEntityManager();
+		try {
+			em.getTransaction().begin();
+			em.createNativeQuery("DELETE FROM CRATE_ITEM c").executeUpdate();
+			em.createNativeQuery("DELETE FROM Cosmetic c").executeUpdate();
+			em.createNativeQuery("DELETE FROM MysteryBox m").executeUpdate();
+			em.createNativeQuery("DELETE FROM INVENTORY_ITEM i").executeUpdate();
+			em.createNativeQuery("DELETE FROM Item i").executeUpdate();
+			em.getTransaction().commit();
+			em.close();
+			
+		} catch (IllegalStateException | SecurityException e) {
+		    e.printStackTrace();
+		} 
+		return Response.ok().build();
+	}
 	
 	@GET
 	@Path("/item/cosmetic/{name}")
@@ -132,6 +133,84 @@ public class ItemResource {
 			return Response.status(400).entity(e.getMessage()).build();
 		}
 		return Response.created(URI.create("/item/cosmetic/" + cosmetic.getName())).build();
+	}
+	
+	@DELETE
+	@Path("/item/cosmetic")
+	public Response deleteAllCosmetics() {
+		EntityManager em = _factory.createEntityManager();
+		try {
+			em.getTransaction().begin();
+			TypedQuery<Cosmetic> query = em.createQuery("from Cosmetic c", Cosmetic.class);
+			List<Cosmetic> cosmeticList = query.getResultList();
+			for (Cosmetic c : cosmeticList) {
+				em.remove(c);
+			}
+			em.getTransaction().commit();
+			em.close();
+			
+		} catch (IllegalStateException | SecurityException e) {
+		    e.printStackTrace();
+		} 
+		return Response.ok().build();
+	}
+	
+	@DELETE
+	@Path("/item/cosmetic/{name}")
+	public Response deleteAllCosmetics(@PathParam("name") String itemName) {
+		EntityManager em = _factory.createEntityManager();
+		try {
+			em.getTransaction().begin();
+			TypedQuery<Cosmetic> query = em.createQuery("from Cosmetic c where c._name = :cname", Cosmetic.class)
+					.setParameter("cname",itemName);
+			Cosmetic cosmetic = query.getSingleResult();
+			em.remove(cosmetic);
+			em.getTransaction().commit();
+			em.close();
+			
+		} catch (IllegalStateException | SecurityException e) {
+		    e.printStackTrace();
+		} 
+		return Response.ok().build();
+	}
+	
+	@DELETE
+	@Path("/item/mysterybox")
+	public Response deleteAllMysteryBoxs() {
+		EntityManager em = _factory.createEntityManager();
+		try {
+			em.getTransaction().begin();
+			TypedQuery<MysteryBox> query = em.createQuery("from MysteryBox c", MysteryBox.class);
+			List<MysteryBox> mysteryBoxList = query.getResultList();
+			for (MysteryBox m : mysteryBoxList) {
+				em.remove(m);
+			}
+			em.getTransaction().commit();
+			em.close();
+			
+		} catch (IllegalStateException | SecurityException e) {
+		    e.printStackTrace();
+		} 
+		return Response.ok().build();
+	}
+	
+	@DELETE
+	@Path("/item/mysterybox/{name}")
+	public Response deleteAllMysteryBoxs(@PathParam("name") String boxName) {
+		EntityManager em = _factory.createEntityManager();
+		try {
+			em.getTransaction().begin();
+			TypedQuery<MysteryBox> query = em.createQuery("from MysteryBox m where m._name = :mname", MysteryBox.class)
+					.setParameter("mname",boxName);
+			MysteryBox mysteryBox = query.getSingleResult();
+			em.remove(mysteryBox);
+			em.getTransaction().commit();
+			em.close();
+			
+		} catch (IllegalStateException | SecurityException e) {
+		    e.printStackTrace();
+		} 
+		return Response.ok().build();
 	}
 	
 	@POST

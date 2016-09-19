@@ -3,6 +3,7 @@ package io.dyname.game.test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import io.dynam.game.domain.Cosmetic;
+import io.dynam.game.domain.MysteryBox;
 import io.dynam.game.dto.CosmeticDTO;
 import io.dynam.game.dto.ItemDTO;
 import io.dynam.game.dto.MysteryBoxDTO;
@@ -17,6 +18,7 @@ import java.util.Set;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.ws.rs.NotFoundException;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
@@ -50,18 +52,7 @@ public class GameResourceTest {
 	private Logger _logger = LoggerFactory.getLogger(GameResourceTest.class);
 	
 	private static Client _client = ClientBuilder.newClient();
-	/**
-	 * Base-URI: http//localhost:1000/services/game
-	 * * Inventory
-	 * - POST	<base-uri>/user/{name}/inventory
-	 * 			Adds a myster box to the users inventory (via MysteryBoxDTO payload)
-	 * - GET	<base-uri>/user/{name}/inventory
-	 * 			retrieves a users inventory
-	 * - DEL	<base-uri>/user/{name}/inventory
-	 * 			Deletes an item from the users inventory
-	 * - DEL	<base-uri>/user/{name}/inventory/{item}
-	 * 			Deletes a specific item from the users inventory
-	 */
+	
 	@Before
 	public void cleanDatabase() {
 		_client = ClientBuilder.newClient();
@@ -80,6 +71,134 @@ public class GameResourceTest {
 	@After
 	public void closeConnection() {
 		_client.close();
+	}
+	
+	@Test
+	public void testSingleInventoryPostAndDelete() {
+		_logger.info("Testing single post and get to user inventory...");
+		_logger.info("[1] Posting User...");
+		UserDTO dtoUser = new UserDTO("Arran","Password");
+		Response response = _client.target(WEB_SERVICE_URI + "/user").request().post(Entity.xml(dtoUser));
+		int status = response.getStatus();
+		if (status != 201) {
+			_logger.error("Failed to post User; Web service responded with: "
+					+ status);
+			fail();
+		}
+		response.close();
+		_logger.info("[2] Posting Item...");
+		CosmeticDTO dtoCosmetic = new CosmeticDTO("Test", "Test_asset_name");
+		response = _client.target(WEB_SERVICE_URI + "/item/cosmetic").request().post(Entity.xml(dtoCosmetic));
+		status = response.getStatus();
+		if (status != 201) {
+			_logger.error("Failed to post Item; Web service responded with: "
+					+ status);
+			fail();
+		}
+		response.close();
+		
+		_logger.info("[3] Posting Item to Inventory....");
+		ItemDTO dtoItem = new ItemDTO(dtoCosmetic);
+		response = _client.target(WEB_SERVICE_URI + "/user/" + dtoUser.getName() + "/inventory").request().post(Entity.xml(dtoItem));
+		status = response.getStatus();
+		if (status != 201) {
+			_logger.error("Failed to post Item to inventory; Web service responded with: "
+					+ status);
+			fail();
+		}
+		response.close();
+		//<base-uri>/user/{name}/inventory
+		_logger.info("[4] Deleting Item from Inventory....");
+		response = _client.target(WEB_SERVICE_URI + "/user/" + dtoUser.getName() +"/inventory/" + dtoCosmetic.getName())
+				.request().delete();
+		status = response.getStatus();
+		if (status != 200) {
+			_logger.error("Failed to delete Item from inventory; Web service responded with: "
+					+ status);
+			fail();
+		}
+		response.close();
+		
+		
+		_logger.info("[5] Geting Item from Inventory...");
+		ItemDTO item = null;
+		try {
+			item = _client.target(WEB_SERVICE_URI + "/user/" + dtoUser.getName() +"/inventory/" + dtoCosmetic.getName())
+					.request().get(ItemDTO.class);
+		} catch (WebApplicationException e) {
+			assertEquals(404,e.getResponse().getStatus());
+		}
+		if (item != null) {
+			fail();
+		}
+	}
+	
+	@Test
+	public void testInventoryMultiPostAndDeleteAll() {
+		_logger.info("Testing mutli post and delete all to user inventory...");
+		_logger.info("[1] Posting User...");
+		UserDTO dtoUser = new UserDTO("Arran","Password");
+		Response response = _client.target(WEB_SERVICE_URI + "/user").request().post(Entity.xml(dtoUser));
+		int status = response.getStatus();
+		if (status != 201) {
+			_logger.error("Failed to post User; Web service responded with: "
+					+ status);
+			fail();
+		}
+		response.close();
+		_logger.info("[2] Posting Items...");
+		List<CosmeticDTO> dtoCosmeticList = new ArrayList<CosmeticDTO>();
+		dtoCosmeticList.add( new CosmeticDTO("Test", "Test_asset_name"));
+		dtoCosmeticList.add( new CosmeticDTO("Test2", "Test_asset_name2"));
+		dtoCosmeticList.add( new CosmeticDTO("Test3", "Test_asset_name3"));
+		for (CosmeticDTO dtoCosmetic: dtoCosmeticList) {
+			response = _client.target(WEB_SERVICE_URI + "/item/cosmetic").request().post(Entity.xml(dtoCosmetic));
+			status = response.getStatus();
+			if (status != 201) {
+				_logger.error("Failed to post Item; Web service responded with: "
+						+ status);
+				fail();
+			}
+			response.close();
+		}
+		_logger.info("[3] Posting Item to Inventory....");
+		for (CosmeticDTO dtoCosmetic: dtoCosmeticList) {
+			ItemDTO dtoItem = new ItemDTO(dtoCosmetic);
+			response = _client.target(WEB_SERVICE_URI + "/user/" + dtoUser.getName() + "/inventory").request().post(Entity.xml(dtoItem));
+			status = response.getStatus();
+			if (status != 201) {
+				_logger.error("Failed to post Item to inventory; Web service responded with: "
+						+ status);
+				fail();
+			}
+			response.close();
+		}
+		
+		_logger.info("[4] Delete all from Inventory....");
+		response = _client.target(WEB_SERVICE_URI + "/user/" + dtoUser.getName() +"/inventory")
+				.request().delete();
+		status = response.getStatus();
+		if (status != 200) {
+			_logger.error("Failed to delete all items from inventory; Web service responded with: "
+					+ status);
+			fail();
+		}
+		response.close();
+		
+		
+		_logger.info("[5] Geting Items from Inventory...");
+		for (CosmeticDTO dtoCosmetic : dtoCosmeticList) {
+			ItemDTO item = null;
+			try {
+				item = _client.target(WEB_SERVICE_URI + "/user/" + dtoUser.getName() +"/inventory/" + dtoCosmetic.getName())
+						.request().get(ItemDTO.class);
+			} catch (WebApplicationException e) {
+				assertEquals(404,e.getResponse().getStatus());
+			}
+			if (item != null) {
+				fail();
+			}
+		}
 	}
 	
 	@Test
@@ -109,6 +228,7 @@ public class GameResourceTest {
 		_logger.info("[3] Posting Item to Inventory....");
 		_logger.info(">>>" + dtoCosmetic.toString());
 		ItemDTO dtoItem = new ItemDTO(dtoCosmetic);
+		_logger.info(">>>" + dtoItem.toString());
 		response =_client.target(WEB_SERVICE_URI + "/user/" + dtoUser.getName() + "/inventory").request().post(Entity.xml(dtoItem));
 		status = response.getStatus();
 		if (status != 201) {
@@ -127,7 +247,6 @@ public class GameResourceTest {
 		assertEquals(dtoCosmetic.getInternalName(),foundCosmetic.getInternalName());
 	}
 	
-	@Ignore
 	@Test
 	public void testPostMysteryBoxToInventory() {
 		_logger.info("Testing post and get of mysterybox to inventory...");
@@ -166,14 +285,15 @@ public class GameResourceTest {
 		}
 		response.close();
 		
-		_logger.info("[4] Geting MysteryBox from Inventory...");
-		MysteryBoxDTO foundMysteryBox = _client.target(WEB_SERVICE_URI + "/user/" + dtoUser.getName() +"/inventory/" + dtoMysteryBox.getName())
-				.request().get(MysteryBoxDTO.class);
+		_logger.info("[4] Geting Item from Inventory...");
+		ItemDTO foundItem = _client.target(WEB_SERVICE_URI + "/user/" + dtoUser.getName() +"/inventory/" + dtoMysteryBox.getName())
+				.request().get(ItemDTO.class);
+		assertEquals(null, foundItem.getCosmetic());
+		MysteryBoxDTO foundMysteryBox = foundItem.getMysteryBox();
 		assertEquals(dtoMysteryBox.getName(),foundMysteryBox.getName());
-		assertEquals(dtoMysteryBox.getContent(),foundMysteryBox.getContent());		
+		assertEquals(dtoMysteryBox.getContentDTO(),foundMysteryBox.getContentDTO());	
 	}
 	
-	@Ignore
 	@Test
 	public void testUserSinglePostGet() {
 		_logger.info("Testing single user post and get....");
@@ -195,7 +315,6 @@ public class GameResourceTest {
 		assertEquals(dtoUser.getPassword(),foundUser.getPassword());
 	}
 
-	@Ignore
 	@Test
 	public void testUserMultiGet() {
 		_logger.info("Testing Multiple user post and get....");
@@ -225,7 +344,6 @@ public class GameResourceTest {
 		}
 	}
 	
-	@Ignore
 	@Test
 	public void testSingleUserPost() {
 		_logger.info("Testing Single user post, put and get....");
@@ -257,7 +375,6 @@ public class GameResourceTest {
 		assertEquals(dtoUser.getPassword(),foundUser.getPassword());
 	}
 	
-	@Ignore
 	@Test
 	public void testSingleUserDelete() {
 		_logger.info("Testing Multiple user post,delete and get....");
@@ -286,14 +403,17 @@ public class GameResourceTest {
 		}
 		response.close();
 		_logger.info("[3] Getting...");
+		UserDTO user = null;
 		try {
-		_client.target(WEB_SERVICE_URI + "/user/Arran").request().get(UserDTO.class);
-		} catch (NotFoundException e) {
+			user = _client.target(WEB_SERVICE_URI + "/user/Arran").request().get(UserDTO.class);
+		} catch (WebApplicationException e) {
 			assertEquals(404,e.getResponse().getStatus());
+		}
+		if (user != null) {
+			fail();
 		}
 	}
 	
-	@Ignore
 	@Test
 	public void testDeleteAllUsers() {
 		_logger.info("Testing Multiple user post,delete all and get....");

@@ -6,37 +6,29 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement(name="item")
 public class ItemDTO {
 	
-	@XmlElement
+	@XmlElement(name = "cosmeticSlot")
 	private CosmeticDTO cosmetic = null;
 	
-	@XmlElement
+	@XmlElement(name = "mysterySlot")
 	private MysteryBoxDTO mystery = null;
 	
 	protected ItemDTO() {}
 	
 	
 	public ItemDTO(CosmeticDTO dtoCosmetic) {
-		setCosmetic(cosmetic);
+		cosmetic = dtoCosmetic;
 	}
 	
 	public ItemDTO(MysteryBoxDTO dtoMysteryBox) {
-		setMysteryBox(dtoMysteryBox);
+		mystery = dtoMysteryBox;
 	}
 	
 	public CosmeticDTO getCosmetic() {
 		return cosmetic;
 	}
 	
-	private void setCosmetic(CosmeticDTO dtoCosmetic) {
-		cosmetic = dtoCosmetic;
-	}
-	
 	public MysteryBoxDTO getMysteryBox() {
 		return mystery;
-	}
-	
-	private void setMysteryBox(MysteryBoxDTO dtoMysteryBox) {
-		mystery = dtoMysteryBox;
 	}
 	
 	@Override

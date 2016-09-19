@@ -72,4 +72,11 @@ public class User {
 		_invent = invent;
 	}
 	
+	public void clearInventory() {
+		_invent.getItems().clear();
+	}
+	
+	public void removeFromInventory(Item item) {
+		_invent.getItems().remove(item);
+	}
 }
