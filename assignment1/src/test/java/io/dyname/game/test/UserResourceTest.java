@@ -45,11 +45,11 @@ import org.slf4j.LoggerFactory;
  * @author Ian Warren
  *
  */
-public class GameResourceTest {
+public class UserResourceTest {
 
 	private static String WEB_SERVICE_URI = "http://localhost:10000/services/game";
 	
-	private Logger _logger = LoggerFactory.getLogger(GameResourceTest.class);
+	private Logger _logger = LoggerFactory.getLogger(UserResourceTest.class);
 	
 	private static Client _client = ClientBuilder.newClient();
 	
