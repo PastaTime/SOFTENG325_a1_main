@@ -1,6 +1,8 @@
 package io.dynam.game.utils;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import io.dynam.game.domain.Cosmetic;
 import io.dynam.game.domain.Inventory;
@@ -58,16 +60,11 @@ public class PersistenceManager {
 	
 	public static List<Cosmetic> getMysteryBoxContents(String boxName) {
 		EntityManager em = getFactory().createEntityManager();
-		List<Cosmetic> boxContent = null;
-		try {
-			TypedQuery<Cosmetic> query = em.createQuery(
-					"select i from MysteryBox m inner join m._contents i where m._name = :boxName", Cosmetic.class)
-					.setParameter("boxName", boxName);
-			boxContent = query.getResultList();
-		} catch (NoResultException e) {
-			throw new WebApplicationException(404);
-		}
-		return boxContent;
+		MysteryBox mysteryBox = getMysteryBoxByName(boxName);
+		MysteryBox realMysteryBox = em.find(MysteryBox.class, mysteryBox.getId());
+		Set<Cosmetic> inventSet = realMysteryBox.getContents();
+		List<Cosmetic> invent = new ArrayList<Cosmetic>(inventSet);
+		return invent;
 	}
 	
 	public static Inventory getUserInventory(String userName) {

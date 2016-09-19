@@ -14,10 +14,12 @@ import io.dynam.game.domain.MysteryBox;
 import io.dynam.game.domain.User;
 import io.dynam.game.dto.CosmeticDTO;
 import io.dynam.game.dto.InventoryDTO;
+import io.dynam.game.dto.ItemDTO;
 import io.dynam.game.dto.MysteryBoxDTO;
 import io.dynam.game.dto.UserDTO;
 import io.dynam.game.utils.CosmeticMapper;
 import io.dynam.game.utils.InventoryMapper;
+import io.dynam.game.utils.ItemMapper;
 import io.dynam.game.utils.MysteryBoxMapper;
 import io.dynam.game.utils.PersistenceManager;
 import io.dynam.game.utils.UserMapper;
@@ -115,15 +117,14 @@ public class UserResource {
 		_logger.info("Cleaning Database............");
 		try {
 			em.getTransaction().begin();
-			em.createNativeQuery("DELETE FROM User u").executeUpdate();
-			em.createNativeQuery("DELETE FROM USER_SERVER u").executeUpdate();
-			em.createNativeQuery("DELETE FROM Server s").executeUpdate();
-			em.createNativeQuery("DELETE FROM MysteryBox m").executeUpdate();
 			em.createNativeQuery("DELETE FROM CRATE_ITEM c").executeUpdate();
 			em.createNativeQuery("DELETE FROM Cosmetic c").executeUpdate();
-			em.createNativeQuery("DELETE FROM CRATE_ITEM c").executeUpdate();
-			em.createNativeQuery("DELETE FROM Item i").executeUpdate();
+			em.createNativeQuery("DELETE FROM MysteryBox m").executeUpdate();
 			em.createNativeQuery("DELETE FROM INVENTORY_ITEM i").executeUpdate();
+			em.createNativeQuery("DELETE FROM Item i").executeUpdate();
+			em.createNativeQuery("DELETE FROM USER_SERVER u").executeUpdate();
+			em.createNativeQuery("DELETE FROM Server s").executeUpdate();
+			em.createNativeQuery("DELETE FROM User u").executeUpdate();
 			em.getTransaction().commit();
 			em.close();
 			
@@ -197,7 +198,7 @@ public class UserResource {
 			em.merge(user);
 			em.getTransaction().commit();
 			em.close();
-			return Response.ok().entity(user).build();
+			return Response.ok().entity(UserMapper.toDto(user)).build();
 		}
 	}
 	
@@ -230,7 +231,10 @@ public class UserResource {
 	public Response deleteAllUsers() {
 		_logger.info("Deleting all Users...");
 		EntityManager em = _factory.createEntityManager();
+		em.getTransaction().begin();
 		em.createNativeQuery("DELETE FROM User u").executeUpdate();
+		em.getTransaction().commit();
+		em.close();
 		return Response.ok().build();
 	}
 	
@@ -253,7 +257,9 @@ public class UserResource {
 	}
 
 	/**
-	 * Posts a cosmetic item to a users inventory
+	 * Posts an item to the users inventory. An item can be either a Cosmetic item or
+	 * a mystery box item. An item must be posted seperately to the /item/ uri before being
+	 * associated with a user.
 	 * @param username - A path parameters for the owner of the inventory
 	 * @param dtoCosmetic - The cosmetic item to be given
 	 * @return
@@ -261,9 +267,22 @@ public class UserResource {
 	@POST
 	@Path("/user/{name}/inventory")
 	@Consumes("application/xml")
-	public Response giveUserCosmetic(@PathParam("name") String username, CosmeticDTO dtoCosmetic) {
+	public Response giveUserItem(@PathParam("name") String username, ItemDTO dtoItem) {
+		if (dtoItem.getCosmetic() != null) {
+			return giveUserCosmetic(username, dtoItem.getCosmetic());
+		} else if (dtoItem.getMysteryBox() != null) {
+			return giveUserMysteryBox(username, dtoItem.getMysteryBox());
+		} else {
+			_logger.error("BAD input item");
+			_logger.error(dtoItem.toString());
+			return Response.serverError().build();
+		}
+	}
+	
+	private Response giveUserCosmetic(String username, CosmeticDTO dtoCosmetic) {
+		_logger.warn("Giving user Cosmetic...");
 		User user = PersistenceManager.getUserByName(username);
-		Cosmetic cosmetic = CosmeticMapper.toDomainModel(dtoCosmetic);
+		Cosmetic cosmetic = PersistenceManager.getCosmeticByName(dtoCosmetic.getName());
 		Set<Item> newItems = user.getInventory().getItems();
 		if (!newItems.add(cosmetic)) {
 			return Response.status(202).entity("User already has Item").build();
@@ -276,17 +295,8 @@ public class UserResource {
 		return Response.created(URI.create("/user/" + user.getName() + "/inventory")).build();
 	}
 	
-	/**
-	 * Posts a mystery box to a users inventory.
-	 * NOTE: MysteryBoxs must be posted on the /item/mysterybox before being linked to a user here.
-	 * @param username - A path parameter for the owner of the inventory
-	 * @param dtoMysteryBox - A DTO for the mysterybox to be posted.
-	 * @return
-	 */
-	@POST
-	@Path("/user/{name}/inventory")
-	@Consumes("application/xml")
-	public Response giveUserMysteryBox(@PathParam("name") String username, MysteryBoxDTO dtoMysteryBox) {
+	private Response giveUserMysteryBox(String username, MysteryBoxDTO dtoMysteryBox) {
+		_logger.warn("Giving user Mysterybox...");
 		User user = PersistenceManager.getUserByName(username);
 		MysteryBox mysteryBox = PersistenceManager.getMysteryBoxByName(dtoMysteryBox.getName());
 		Set<Item> newItems = user.getInventory().getItems();
@@ -324,29 +334,14 @@ public class UserResource {
 	@Path("/user/{name}/inventory/{item}")
 	@Produces("application/xml")
 	public Response getUserItem(@PathParam("name") String username, @PathParam("item") String itemName) {
-		EntityManager em = _factory.createEntityManager();
-		Item item = null;
-		try {
-			TypedQuery<Item> query = em.createQuery(
-					"select i from User u " +
-			"inner join u._invent._items i " +
-			"where u._name = :uname and i._name = :iname", Item.class)
-					.setParameter("uname", username)
-					.setParameter("iname",itemName);
-			item = query.getSingleResult();
-		} catch (NoResultException e) {
-			throw new WebApplicationException(404);
+		Inventory invent = PersistenceManager.getUserInventory(username);
+		for (Item item : invent.getItems()) {
+			if (item.getName().equals(itemName)) {
+				return Response.ok().entity(ItemMapper.toDto(item)).build();
+			}
 		}
-		em.close();
-		if (item instanceof Cosmetic) {
-			CosmeticDTO dtoCosmetic = CosmeticMapper.toDto((Cosmetic)item);
-			return Response.ok().entity(dtoCosmetic).build();
-		} else if (item instanceof MysteryBox) {
-			MysteryBoxDTO dtoMystery = MysteryBoxMapper.toDto((MysteryBox) item);
-			return Response.ok().entity(dtoMystery).build();
-		} else {
-			throw new WebApplicationException(404);
-		}
+		throw new WebApplicationException(404);
+		
 	}
 
 	/**
