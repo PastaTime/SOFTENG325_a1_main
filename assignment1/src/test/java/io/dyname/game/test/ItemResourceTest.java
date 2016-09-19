@@ -39,14 +39,6 @@ public class ItemResourceTest {
 	 * Base-URI: http//localhost:1000/services/game
 	 * 
 	 * * Items
-	 * - GET	<base-uri>/item/cosmetic/{name}
-	 * 			retrieves a cosmetic item by its name
-	 * - GET	<base-uri>/item/mystery/{name}
-	 * 			retrieves a mystery box by its name
-	 * - POST	<base-uri>/item/cosmetic
-	 * 			posts a cosmetic item
-	 * - POST	<base-uri>/item/mystery
-	 * 			posts a mystery box
 	 * - POST 	<base-uri>/item/mysterybox/{name}
 	 * 			posts a cosmetic to a mysterybox
 	 * - GET	<base-uri>/item/mysterybox/{name}/contents
@@ -112,21 +104,62 @@ public class ItemResourceTest {
 	}
 	
 	@Test
-	public void testMysterBoxSinglePostAndGet() {
+	public void testMysteryBoxSinglePostAndGet() {
 		_logger.info("Testing single MysteryBox post and get....");
 		_logger.info("[1] Posting...");
 		MysteryBoxDTO dtoMysteryBox = new MysteryBoxDTO("MysteryBox");
-		Response response = _client.target(WEB_SERVICE_URI + "/item/cosmetic").request().post(Entity.xml(dtoMysteryBox));
+		Response response = _client.target(WEB_SERVICE_URI + "/item/mysterybox").request().post(Entity.xml(dtoMysteryBox));
 		int status = response.getStatus();
+		if (status != 201) {
+			_logger.error("Failed to post MysteryBox; Web service responded with: "
+					+ status);
+			fail();
+		}
+		response.close();
+		_logger.info("[2] Getting...");
+		MysteryBoxDTO foundMysteryBox = _client.target(WEB_SERVICE_URI + "/item/mysterybox/" + dtoMysteryBox.getName())
+				.request().get(MysteryBoxDTO.class);
+		
+		assertEquals(dtoMysteryBox.getName(),foundMysteryBox.getName());
+	}
+	
+	@Test
+	public void testMysteryBoxWithContentsPostAndGet() {
+		_logger.info("Testing single MysteryBox post and get....");
+		_logger.info("[1] Posting MysteryBox...");
+		MysteryBoxDTO dtoMysteryBox = new MysteryBoxDTO("MysteryBox");
+		Response response = _client.target(WEB_SERVICE_URI + "/item/mysterybox").request().post(Entity.xml(dtoMysteryBox));
+		int status = response.getStatus();
+		if (status != 201) {
+			_logger.error("Failed to post MysteryBox; Web service responded with: "
+					+ status);
+			fail();
+		}
+		
+		_logger.info("[2] Posting Item...");
+		CosmeticDTO dtoCosmetic = new CosmeticDTO("Item","Asset_Name");
+		response = _client.target(WEB_SERVICE_URI + "/item/cosmetic").request().post(Entity.xml(dtoCosmetic));
+		status = response.getStatus();
 		if (status != 201) {
 			_logger.error("Failed to post Cosmetic; Web service responded with: "
 					+ status);
 			fail();
 		}
 		response.close();
-		_logger.info("[2] Getting...");
-		MysteryBoxDTO foundMysteryBox = _client.target(WEB_SERVICE_URI + "/item/cosmetic/" + dtoMysteryBox.getName())
-				.request().get(MysteryBoxDTO.class);
+		
+		_logger.info("[3] Posting item to MysteryBox...");
+		response = _client.target(WEB_SERVICE_URI + "/item/mysterybox/" + dtoMysteryBox.getName()).request().post(Entity.xml(dtoCosmetic));
+		status = response.getStatus();
+		if (status != 201) {
+			_logger.error("Failed to post Cosmetic; Web service responded with: "
+					+ status);
+			fail();
+		}
+		response.close();
+		_logger.info("[4] Getting MysteryBox Contents...");
+		MysteryBoxDTO foundMysteryBox = _client.target(WEB_SERVICE_URI + "/item/mysterybox/" + dtoMysteryBox.getName() + "/contents")
+				.request().get(GenericType<List<CosmeticDTO>>());
+		
 		
 		assertEquals(dtoMysteryBox.getName(),foundMysteryBox.getName());
 	}

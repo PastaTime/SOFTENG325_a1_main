@@ -251,17 +251,18 @@ public class ItemResource {
 	@GET
 	@Path("/item/mysterybox/{name}/contents")
 	@Produces("application/xml")
-	public Response getMysteryBoxContents(@PathParam("name") String boxName, @QueryParam("search") String optionalSearch) {		
+	public List<CosmeticDTO> getMysteryBoxContents(@PathParam("name") String boxName, @QueryParam("search") String optionalSearch) {		
 		if (optionalSearch == null) {
 			List<Cosmetic> content = PersistenceManager.getMysteryBoxContents(boxName);
 			List<CosmeticDTO> contentDTO = CosmeticMapper.toDto(content);
-			GenericEntity<List<CosmeticDTO>> entity = new GenericEntity<List<CosmeticDTO>>(contentDTO){};
-			return Response.ok().entity(entity).build();
+			return contentDTO;
 		} else {
 			List<Cosmetic> content = PersistenceManager.getMysteryBoxContents(boxName);
 			for (Cosmetic cos: content) {
 				if (cos.getName().equals(optionalSearch)) {
-					return Response.ok().entity(CosmeticMapper.toDto(cos)).build();
+					List<CosmeticDTO> contentDTO = new ArrayList<CosmeticDTO>();
+					contentDTO.add(CosmeticMapper.toDto(cos));
+					return contentDTO;
 				}
 			}
 			throw new WebApplicationException(404);
