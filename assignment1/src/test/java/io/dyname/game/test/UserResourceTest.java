@@ -3,27 +3,19 @@ package io.dyname.game.test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import io.dynam.game.domain.Cosmetic;
-import io.dynam.game.domain.MysteryBox;
 import io.dynam.game.dto.CosmeticDTO;
 import io.dynam.game.dto.ItemDTO;
 import io.dynam.game.dto.MysteryBoxDTO;
 import io.dynam.game.dto.UserDTO;
-import io.dynam.game.utils.PersistenceManager;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
 
 import org.junit.After;
@@ -45,6 +37,7 @@ import org.slf4j.LoggerFactory;
  * @author Ian Warren
  *
  */
+@Ignore
 public class UserResourceTest {
 
 	private static String WEB_SERVICE_URI = "http://localhost:10000/services/game";

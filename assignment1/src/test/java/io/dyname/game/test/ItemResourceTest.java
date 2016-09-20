@@ -1,6 +1,8 @@
 package io.dyname.game.test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import io.dynam.game.domain.Cosmetic;
 import io.dynam.game.domain.MysteryBox;
@@ -35,26 +37,6 @@ import org.slf4j.LoggerFactory;
 
 
 public class ItemResourceTest {
-	/**
-	 * Base-URI: http//localhost:1000/services/game
-	 * 
-	 * * Items
-	 * - POST 	<base-uri>/item/mysterybox/{name}
-	 * 			posts a cosmetic to a mysterybox
-	 * - GET	<base-uri>/item/mysterybox/{name}/contents
-	 * 			retrieves the contents of a mysterybox
-	 * - DEL	<base-uri>/item/mysterybox/{name}
-	 * 			Deletes a mystery box by name
-	 * - DEL	<base-uri>/item/mystery
-	 * 			Deletes all mystery boxs
-	 * - DEL	<base-uri>/item/cosmetic/{name
-	 * 			Deletes a cosmetic by name
-	 * - DEL	<base-uri>/item/cosmetic
-	 * 			Deletes all cosmetics
-	 * - DEL	<base-uri>/item
-	 * 			Deletes all items
-	 * 
-	 */
 
 	private static String WEB_SERVICE_URI = "http://localhost:10000/services/game";
 	
@@ -82,6 +64,7 @@ public class ItemResourceTest {
 		_client.close();
 	}
 	
+	@Ignore
 	@Test
 	public void testCosmeticSinglePostAndGet() {
 		_logger.info("Testing single cosmetic post and get....");
@@ -103,6 +86,7 @@ public class ItemResourceTest {
 		assertEquals(dtoCosmetic.getInternalName(),foundCosmetic.getInternalName());
 	}
 	
+	@Ignore
 	@Test
 	public void testMysteryBoxSinglePostAndGet() {
 		_logger.info("Testing single MysteryBox post and get....");
@@ -123,6 +107,7 @@ public class ItemResourceTest {
 		assertEquals(dtoMysteryBox.getName(),foundMysteryBox.getName());
 	}
 	
+	@Ignore
 	@Test
 	public void testMysteryBoxWithContentsPostAndGet() {
 		_logger.info("Testing single MysteryBox post and get....");
@@ -135,6 +120,7 @@ public class ItemResourceTest {
 					+ status);
 			fail();
 		}
+		response.close();
 		
 		_logger.info("[2] Posting Item...");
 		CosmeticDTO dtoCosmetic = new CosmeticDTO("Item","Asset_Name");
@@ -157,10 +143,152 @@ public class ItemResourceTest {
 		}
 		response.close();
 		_logger.info("[4] Getting MysteryBox Contents...");
-		MysteryBoxDTO foundMysteryBox = _client.target(WEB_SERVICE_URI + "/item/mysterybox/" + dtoMysteryBox.getName() + "/contents")
-				.request().get(GenericType<List<CosmeticDTO>>());
+		List<CosmeticDTO> foundMysteryBoxContents = _client.target(WEB_SERVICE_URI + "/item/mysterybox/" + dtoMysteryBox.getName() + "/contents")
+				.request().get(new GenericType<List<CosmeticDTO>>(){});
 		
+		assertEquals(1, foundMysteryBoxContents.size());
+		assertEquals(dtoCosmetic.getName(), foundMysteryBoxContents.get(0).getName());
+		assertEquals(dtoCosmetic.getInternalName(), foundMysteryBoxContents.get(0).getInternalName());
+	}
+	
+	@Ignore
+	@Test
+	public void deleteAllItems() {
+		_logger.info("Testing delete all items....");
+		_logger.info("[1] Posting MysteryBox...");
+		MysteryBoxDTO dtoMysteryBox = new MysteryBoxDTO("MysteryBox");
+		Response response = _client.target(WEB_SERVICE_URI + "/item/mysterybox").request().post(Entity.xml(dtoMysteryBox));
+		int status = response.getStatus();
+		if (status != 201) {
+			_logger.error("Failed to post MysteryBox; Web service responded with: "
+					+ status);
+			fail();
+		}
+		response.close();
 		
-		assertEquals(dtoMysteryBox.getName(),foundMysteryBox.getName());
+		_logger.info("[2] Posting Item...");
+		CosmeticDTO dtoCosmetic = new CosmeticDTO("Item","Asset_Name");
+		response = _client.target(WEB_SERVICE_URI + "/item/cosmetic").request().post(Entity.xml(dtoCosmetic));
+		status = response.getStatus();
+		if (status != 201) {
+			_logger.error("Failed to post Cosmetic; Web service responded with: "
+					+ status);
+			fail();
+		}
+		response.close();
+		
+		_logger.info("[3] Deleting all Items...");
+		response = _client.target(WEB_SERVICE_URI + "/item").request().delete();
+		status = response.getStatus();
+		if (status != 200) {
+			_logger.error("Failed to delete items; Web service responded with: "
+					+ status);
+			fail();
+		}
+		response.close();
+		
+		_logger.info("[4] Getting MysteryBox...");
+		MysteryBoxDTO foundMysteryBox = null;
+		try {
+			foundMysteryBox = _client.target(WEB_SERVICE_URI + "/item/mysterybox/" + dtoMysteryBox.getName())
+					.request().get(MysteryBoxDTO.class);
+			
+		}catch (WebApplicationException e) {
+			assertEquals(404,e.getResponse().getStatus());
+		}
+		assertNull(foundMysteryBox);
+		
+		_logger.info("[5] Getting Item...");
+		CosmeticDTO foundCosmetic = null;
+		try {
+			foundCosmetic = _client.target(WEB_SERVICE_URI + "/item/cosmetic/" + dtoCosmetic.getName())
+					.request().get(CosmeticDTO.class);
+		} catch (WebApplicationException e) {
+			assertEquals(404,e.getResponse().getStatus());
+		}
+		assertNull(foundCosmetic);
+	}
+	
+	
+	@Test
+	public void testDeleteCosmetic() {
+		_logger.info("Testing delete all cosmetic....");
+		
+		_logger.info("[1] Posting Items....");
+		List<CosmeticDTO> dtoCosmeticList = new ArrayList<CosmeticDTO>();
+		dtoCosmeticList.add(new CosmeticDTO("Item","Item_asset"));
+		for (CosmeticDTO dtoCosmetic : dtoCosmeticList) {
+			Response response = _client.target(WEB_SERVICE_URI + "/item/cosmetic").request().post(Entity.xml(dtoCosmetic));
+			int status = response.getStatus();
+			if (status != 201) {
+				_logger.error("Failed to post Cosmetic; Web service responded with: "
+						+ status);
+				fail();
+			}
+			response.close();
+		}
+		
+		_logger.info("[2] Deleting Cosmetics...");
+		Response response = _client.target(WEB_SERVICE_URI + "/item/cosmetic/" + dtoCosmeticList.get(0).getName()).request().delete();
+		int status = response.getStatus();
+		if (status != 200) {
+			_logger.error("Failed to delete cosmetics; Web service responded with: "
+					+ status);
+			fail();
+		}
+		response.close();
+		
+		_logger.info("[3] Getting Items...");
+		for (CosmeticDTO dtoCosmetic : dtoCosmeticList) {
+			CosmeticDTO foundCosmetic = null;
+			try {
+				foundCosmetic = _client.target(WEB_SERVICE_URI + "/item/cosmetic/" + dtoCosmetic.getName())
+						.request().get(CosmeticDTO.class);
+			} catch (WebApplicationException e) {
+				assertEquals(404,e.getResponse().getStatus());
+			}
+			assertNull(foundCosmetic);
+		}
+	}
+	
+	@Test
+	public void testDeleteMysteryBox() {
+		_logger.info("Testing delete all cosmetic....");
+		
+		_logger.info("[1] Posting Items....");
+		List<MysteryBoxDTO> dtoMysteryBoxList = new ArrayList<MysteryBoxDTO>();
+		dtoMysteryBoxList.add(new MysteryBoxDTO("Box"));
+		for (MysteryBoxDTO dtoCosmetic : dtoMysteryBoxList) {
+			Response response = _client.target(WEB_SERVICE_URI + "/item/mysterybox").request().post(Entity.xml(dtoCosmetic));
+			int status = response.getStatus();
+			if (status != 201) {
+				_logger.error("Failed to post MysteryBox; Web service responded with: "
+						+ status);
+				fail();
+			}
+			response.close();
+		}
+		
+		_logger.info("[2] Deleting MysteryBox...");
+		Response response = _client.target(WEB_SERVICE_URI + "/item/mysterybox/" + dtoMysteryBoxList.get(0).getName()).request().delete();
+		int status = response.getStatus();
+		if (status != 200) {
+			_logger.error("Failed to delete MysteryBox; Web service responded with: "
+					+ status);
+			fail();
+		}
+		response.close();
+		
+		_logger.info("[3] Getting Items...");
+		for (MysteryBoxDTO dtoMystery : dtoMysteryBoxList) {
+			MysteryBoxDTO foundMysteryBox = null;
+			try {
+				foundMysteryBox = _client.target(WEB_SERVICE_URI + "/item/cosmetic/" + dtoMystery.getName())
+						.request().get(MysteryBoxDTO.class);
+			} catch (WebApplicationException e) {
+				assertEquals(404,e.getResponse().getStatus());
+			}
+			assertNull(foundMysteryBox);
+		}
 	}
 }

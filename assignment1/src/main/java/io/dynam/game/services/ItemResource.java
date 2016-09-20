@@ -136,28 +136,8 @@ public class ItemResource {
 	}
 	
 	@DELETE
-	@Path("/item/cosmetic")
-	public Response deleteAllCosmetics() {
-		EntityManager em = _factory.createEntityManager();
-		try {
-			em.getTransaction().begin();
-			TypedQuery<Cosmetic> query = em.createQuery("from Cosmetic c", Cosmetic.class);
-			List<Cosmetic> cosmeticList = query.getResultList();
-			for (Cosmetic c : cosmeticList) {
-				em.remove(c);
-			}
-			em.getTransaction().commit();
-			em.close();
-			
-		} catch (IllegalStateException | SecurityException e) {
-		    e.printStackTrace();
-		} 
-		return Response.ok().build();
-	}
-	
-	@DELETE
 	@Path("/item/cosmetic/{name}")
-	public Response deleteAllCosmetics(@PathParam("name") String itemName) {
+	public Response deleteAllCosmeticsByName(@PathParam("name") String itemName) {
 		EntityManager em = _factory.createEntityManager();
 		try {
 			em.getTransaction().begin();
@@ -165,26 +145,6 @@ public class ItemResource {
 					.setParameter("cname",itemName);
 			Cosmetic cosmetic = query.getSingleResult();
 			em.remove(cosmetic);
-			em.getTransaction().commit();
-			em.close();
-			
-		} catch (IllegalStateException | SecurityException e) {
-		    e.printStackTrace();
-		} 
-		return Response.ok().build();
-	}
-	
-	@DELETE
-	@Path("/item/mysterybox")
-	public Response deleteAllMysteryBoxs() {
-		EntityManager em = _factory.createEntityManager();
-		try {
-			em.getTransaction().begin();
-			TypedQuery<MysteryBox> query = em.createQuery("from MysteryBox c", MysteryBox.class);
-			List<MysteryBox> mysteryBoxList = query.getResultList();
-			for (MysteryBox m : mysteryBoxList) {
-				em.remove(m);
-			}
 			em.getTransaction().commit();
 			em.close();
 			
@@ -235,14 +195,16 @@ public class ItemResource {
 	@Path("/item/mysterybox/{name}")
 	@Consumes("application/xml")
 	public Response postCosmeticToMysteryBox(@PathParam("name") String boxName, CosmeticDTO dtoCosmetic) {
-		MysteryBox mysteryBox = PersistenceManager.getMysteryBoxByName(boxName);
-		Cosmetic cosmetic = CosmeticMapper.toDomainModel(dtoCosmetic);
+		
+		EntityManager em = _factory.createEntityManager();
+		
+		em.getTransaction().begin();
+		MysteryBox mysteryBox = em.find(MysteryBox.class, PersistenceManager.getMysteryBoxByName(boxName).getId());
+		Cosmetic cosmetic = em.find(Cosmetic.class, PersistenceManager.getCosmeticByName(dtoCosmetic.getName()).getId());
 		if (!mysteryBox.getContents().add(cosmetic)) {
 			return Response.status(400).entity("Box already has Cosmetic").build();
 		}
-		EntityManager em = _factory.createEntityManager();
-		em.getTransaction().begin();
-		em.merge(mysteryBox);
+		em.persist(mysteryBox);
 		em.getTransaction().commit();
 		em.close();
 		return Response.created(URI.create("/item/mysterybox/" + mysteryBox.getName())).build();
