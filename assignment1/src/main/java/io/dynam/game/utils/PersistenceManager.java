@@ -8,6 +8,7 @@ import io.dynam.game.domain.Cosmetic;
 import io.dynam.game.domain.Inventory;
 import io.dynam.game.domain.Item;
 import io.dynam.game.domain.MysteryBox;
+import io.dynam.game.domain.Server;
 import io.dynam.game.domain.User;
 
 import javax.persistence.EntityManager;
@@ -95,5 +96,32 @@ public class PersistenceManager {
 			throw new WebApplicationException(404);
 		}
 		return user;
+	}
+	
+	public static Server getServerByName(String name) {
+		EntityManager em = getFactory().createEntityManager();
+		Server server = null;
+		try {
+			TypedQuery<Server> query = em.createQuery(
+					"from Server s where s._name = :sname", Server.class)
+					.setParameter("sname", name);
+			server = query.getSingleResult();
+		} catch (NoResultException e) {
+			throw new WebApplicationException(404);
+		}
+		return server;
+	}
+	
+	public static List<Server> getAllServers() {
+		EntityManager em = getFactory().createEntityManager();
+		List<Server> serverList = null;
+		try {
+			TypedQuery<Server> query = em.createQuery(
+					"from Server s", Server.class);
+			serverList = query.getResultList();
+		} catch (NoResultException e) {
+			throw new WebApplicationException(404);
+		}
+		return serverList;
 	}
 }

@@ -15,20 +15,21 @@
 	</properties>
 
 	<dependencies>
+	
 		<!-- Hibernate JPA provider. -->
 		<dependency>
 			<groupId>org.hibernate</groupId>
 			<artifactId>hibernate-entitymanager</artifactId>
 			<version>5.1.0.Final</version>
 		</dependency>
-		
+
 		<!-- Commons UTIL -->
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
 			<version>3.4</version>
 		</dependency>
-		
+
 		<!-- RESTEasy implementation -->
 		<dependency>
 			<groupId>org.jboss.resteasy</groupId>
@@ -53,16 +54,16 @@
 			<artifactId>resteasy-servlet-initializer</artifactId>
 			<version>3.0.12.Final</version>
 		</dependency>
-		
-		   <!-- RESTEasy JAXB provider -->
-        <dependency>
+
+		<!-- RESTEasy JAXB provider -->
+		<dependency>
 			<groupId>org.jboss.resteasy</groupId>
 			<artifactId>resteasy-jaxb-provider</artifactId>
 			<version>3.0.12.Final</version>
 		</dependency>
-		
+
 		<!-- Joda date/time library -->
-        <dependency>
+		<dependency>
 			<groupId>joda-time</groupId>
 			<artifactId>joda-time</artifactId>
 			<version>2.7</version>

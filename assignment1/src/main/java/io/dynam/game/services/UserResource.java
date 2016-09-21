@@ -11,17 +11,20 @@ import io.dynam.game.domain.Cosmetic;
 import io.dynam.game.domain.Inventory;
 import io.dynam.game.domain.Item;
 import io.dynam.game.domain.MysteryBox;
+import io.dynam.game.domain.Server;
 import io.dynam.game.domain.User;
 import io.dynam.game.dto.CosmeticDTO;
 import io.dynam.game.dto.InventoryDTO;
 import io.dynam.game.dto.ItemDTO;
 import io.dynam.game.dto.MysteryBoxDTO;
+import io.dynam.game.dto.ServerDTO;
 import io.dynam.game.dto.UserDTO;
 import io.dynam.game.utils.CosmeticMapper;
 import io.dynam.game.utils.InventoryMapper;
 import io.dynam.game.utils.ItemMapper;
 import io.dynam.game.utils.MysteryBoxMapper;
 import io.dynam.game.utils.PersistenceManager;
+import io.dynam.game.utils.ServerMapper;
 import io.dynam.game.utils.UserMapper;
 
 import javax.annotation.Resource;
@@ -52,6 +55,8 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.container.AsyncResponse;
+import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
@@ -104,6 +109,7 @@ public class UserResource {
 			.getLogger(UserResource.class);
 	private static EntityManagerFactory _factory = PersistenceManager.getFactory();
 	
+	protected List<AsyncResponse> responses = new ArrayList<AsyncResponse>();
 	/**
 	 * A universal delete operation.
 	 * Deletes all persisted entitys
@@ -399,6 +405,111 @@ public class UserResource {
 	}
 	
 	
+	@POST
+	@Path("/server")
+	@Consumes("application/xml")
+	public Response createServer(ServerDTO dtoServer) {
+		Server server = null;
+		try {
+			server = ServerMapper.toDomainModel(dtoServer);
+			EntityManager em = _factory.createEntityManager();
+			em.getTransaction().begin();
+			em.persist(server);
+			em.getTransaction().commit();
+			em.close();
+		} catch (PersistenceException e) {
+			return Response.status(400).entity(e.getMessage()).build();
+		}
+		return Response.created(URI.create("/server/" + server.getName())).build();
+	}
 	
+	@GET
+	@Path("/server/{name}")
+	@Produces("application/xml")
+	public ServerDTO getServer(@PathParam("name") String serverName) {
+		Server server = PersistenceManager.getServerByName(serverName);
+		ServerDTO dtoServer = ServerMapper.toDto(server);
+		return dtoServer;
+	}
+	
+	@GET
+	@Path("/connect")
+	@Produces("application/xml")
+	public void waitForAvailableServer(@Suspended AsyncResponse response) {
+		responses.add(response);
+		pollServerAvailablity();
+	}
+	
+	private boolean currentlyPolling = false;
+	
+	private void pollServerAvailablity() {
+		if (!currentlyPolling) {
+			new Thread() {
+				public void run() {
+					while (true) {
+						List<Server> serverList = PersistenceManager.getAllServers();
+						for (Server server : serverList) {
+							if (server.getOnlineUsers().size() < server.getCapacity()) {
+								notifyResponses(server);
+								return;
+							}
+						}
+						try {
+							Thread.sleep(1000);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+					}
+					
+				}
+			}.start();
+		}
+	}
+	
+	private void notifyResponses(Server server) {
+		for (AsyncResponse response: responses) {
+			response.resume(ServerMapper.toDto(server));
+		}
+		responses.clear();
+		currentlyPolling = false;
+	}
+		
+	@POST
+	@Path("/user/{name}/connect")
+	@Produces("application/xml")
+	public Response connectToServer(@PathParam("name") String username, ServerDTO dtoServer) {
+		List<Server> serverList = PersistenceManager.getAllServers();
+		EntityManager em = _factory.createEntityManager();
+		Server server = em.find(Server.class,PersistenceManager.getServerByName(dtoServer.getName()).getId());
+		if (server.getOnlineUsers().size() < server.getCapacity()) {
+			em.getTransaction().begin();
+			User user = em.find(User.class, PersistenceManager.getUserByName(username).getId());
+			user.setServer(server);
+			em.persist(user);
+			em.getTransaction().commit();
+			em.close();
+			return Response.ok().build();
+		} else {
+			return Response.seeOther(URI.create("/connect")).build();
+		}
+	}
+	
+	
+	@POST
+	@Path("/user/{name}/disconnect")
+	@Consumes("application/xml")
+	public void disconnectFromServer(@PathParam("name") String username) {
+		EntityManager em = _factory.createEntityManager();
+		User user = em.find(User.class, PersistenceManager.getUserByName(username).getId());
+		Server server = user.getServer();
+		if (server == null) {
+			throw new WebApplicationException(404);
+		} else {
+			user.setServer(null);
+			for (AsyncResponse response: responses) {
+				response.resume(ServerMapper.toDto(server));
+			}
+		}
+	}
 	
 }

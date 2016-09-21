@@ -59,6 +59,14 @@ public class User {
 	public String getPassword() {
 		return _password;
 	}
+	
+	public Server getServer() {
+		return _server;
+	}
+	
+	public void setServer(Server server) {
+		_server = server;
+	}
 
 	public void setPassword(String _password) {
 		this._password = _password;

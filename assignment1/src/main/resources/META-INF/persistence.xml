@@ -33,7 +33,7 @@
 			<!--  Configure the data source. In this case the embedded H2 database
 			      is used. -->
 			<property name="javax.persistence.jdbc.driver" value="org.h2.Driver" />
-			<property name="javax.persistence.jdbc.url" value="jdbc:h2:~/test;mv_store=false;" />
+			<property name="javax.persistence.jdbc.url" value="jdbc:h2:D:/test;mv_store=false;" />
 			<property name="javax.persistence.jdbc.user" value="sa" />
 			<property name="javax.persistence.jdbc.password" value="sa" />
 			
