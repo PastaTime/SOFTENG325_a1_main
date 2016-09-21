@@ -15,12 +15,19 @@
 	</properties>
 
 	<dependencies>
-	
+
 		<!-- Hibernate JPA provider. -->
 		<dependency>
 			<groupId>org.hibernate</groupId>
 			<artifactId>hibernate-entitymanager</artifactId>
 			<version>5.1.0.Final</version>
+		</dependency>
+		
+		<!-- https://mvnrepository.com/artifact/org.jboss.resteasy/resteasy-jettison-provider -->
+		<dependency>
+			<groupId>org.jboss.resteasy</groupId>
+			<artifactId>resteasy-jettison-provider</artifactId>
+			<version>3.0.19.Final</version>
 		</dependency>
 
 		<!-- Commons UTIL -->

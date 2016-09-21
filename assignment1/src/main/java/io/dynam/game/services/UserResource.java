@@ -47,6 +47,7 @@ import javax.transaction.UserTransaction;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.CookieParam;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -68,30 +69,24 @@ import org.slf4j.LoggerFactory;
 /**
  * Base-URI: http//localhost:1000/services/game
  * * Base
- * 
  * - DEL	<base-uri>
  * 			Deletes all entitys stored in the database
  * 
  ** User
- *
  * - POST 	<base-uri>/user
  * 			Creates a user in the database
  * - GET 	<base-uri>/user/{name}
  * 			retrieves a user DTO object from the data base.
- * 			TODO: requires authentication
  * - GET	<base-uri>/users
  * 			retrieves all users in the database
- * 			TODO: only show 10 and HATEOS to link others
- * 			TODO: requires Admin
  * - PUT    <base-uri>/user/{name}
- * 			TODO: updates a users password (XML containing new and old password?)
+ * 			updates a users password
  * - DEL	<base-uri>/user/{name}
  * 			Deletes a user by name
  * - DEL	<base-uri>/users
  * 			Deletes all users
  * 
  * * Inventory
- * 
  * - POST	<base-uri>/user/{name}/inventory
  * 			Adds a cosmetic item to the users inventory
  * - GET	<base-uri>/user/{name}/inventory/{item}
@@ -102,6 +97,19 @@ import org.slf4j.LoggerFactory;
  * 			Deletes an item from the users inventory
  * - DEL	<base-uri>/user/{name}/inventory/{item}
  * 			Deletes a specific item from the users inventory
+ * 
+ * * Server
+ * - POST	<base-uri>/server
+ * 			Creates a new server (password is optional as null or non-null)
+ * - GET	<base-uri>/server/{name}
+ * 			Gets a servers details by its name
+ * - PUT	<base-uri>/user/{name}/connect
+ * 			Attempts to connect the user to a given server
+ * 			An attached cookie parameter will contain a password if the server requires one
+ * - GET 	<base-uri>/connect
+ * 			An asynchronus service which notifies the called when a server is available
+ * - DEL	<base-uri>/user/{name}/connect
+ * 			Disconnects the users from its connected server.
  */
 @Path("/game")
 public class UserResource {
@@ -146,7 +154,7 @@ public class UserResource {
 	 */
 	@POST
 	@Path("/user")
-	@Consumes("application/xml")
+	@Consumes({"application/xml","application/json"})
 	public Response createUser(UserDTO dtoUser) {
 		_logger.info("creating User....");
 		User user = null;
@@ -170,13 +178,16 @@ public class UserResource {
 	 */
 	@GET
 	@Path("/user/{name}")
-	@Produces("application/xml")
-	public UserDTO getUser(@PathParam("name") String username) {
-		//TODO: Implement user login security
-		User user = PersistenceManager.getUserByName(username);
+	@Produces({"application/xml","application/json"})
+	public Response getUser(@PathParam("name") String username) {
+		User user = null;
+		try {
+		user = PersistenceManager.getUserByName(username);
+		} catch (WebApplicationException e) {
+			return Response.noContent().build();
+		}
 		UserDTO dtoUser = UserMapper.toDto(user);
-
-		return dtoUser;
+		return Response.ok().entity(dtoUser).build();
 	}
 	
 	/**
@@ -187,8 +198,8 @@ public class UserResource {
 	 */
 	@PUT
 	@Path("/user/{name}")
-	@Consumes("application/xml")
-	@Produces("application/xml")
+	@Consumes({"application/xml","application/json"})
+	@Produces({"application/xml","application/json"})
 	public Response updateUserPassword(@PathParam("name") String username, UserDTO dtoUser) {
 		User user = PersistenceManager.getUserByName(username);
 		if (!user.getName().equals(dtoUser.getName())) {
@@ -213,7 +224,7 @@ public class UserResource {
 	 */
 	@GET
 	@Path("/users")
-	@Produces("application/xml")
+	@Produces({"application/xml","application/json"})
 	public Response getAllUsers() {
 		EntityManager em = _factory.createEntityManager();
 		TypedQuery<User> query = em.createQuery(
@@ -271,7 +282,7 @@ public class UserResource {
 	 */
 	@POST
 	@Path("/user/{name}/inventory")
-	@Consumes("application/xml")
+	@Consumes({"application/xml","application/json"})
 	public Response giveUserItem(@PathParam("name") String username, ItemDTO dtoItem) {
 		if (dtoItem.getCosmetic() != null) {
 			return giveUserCosmetic(username, dtoItem.getCosmetic());
@@ -323,7 +334,7 @@ public class UserResource {
 	 */
 	@GET
 	@Path("/user/{name}/inventory")
-	@Produces("application/xml")
+	@Produces({"application/xml","application/json"})
 	public List<ItemDTO> getUserInventory(@PathParam("name") String username) {
 		List<ItemDTO> dtoItemList = new ArrayList<ItemDTO>();
 		EntityManager em = _factory.createEntityManager();
@@ -342,16 +353,15 @@ public class UserResource {
 	 */
 	@GET
 	@Path("/user/{name}/inventory/{item}")
-	@Produces("application/xml")
-	public ItemDTO getUserItem(@PathParam("name") String username, @PathParam("item") String itemName) {
+	@Produces({"application/xml","application/json"})
+	public Response getUserItem(@PathParam("name") String username, @PathParam("item") String itemName) {
 		Inventory invent = PersistenceManager.getUserInventory(username);
 		for (Item item : invent.getItems()) {
 			if (item.getName().equals(itemName)) {
-				return ItemMapper.toDto(item);
+				return Response.ok().entity(ItemMapper.toDto(item)).build();
 			}
 		}
-		throw new WebApplicationException(404);
-		
+		return Response.noContent().build();
 	}
 
 	/**
@@ -361,7 +371,7 @@ public class UserResource {
 	 */
 	@DELETE
 	@Path("/user/{name}/inventory")
-	@Consumes("application/xml")
+	@Consumes({"application/xml","application/json"})
 	public Response deleteUserInventory(@PathParam("name") String username) {
 		EntityManager em = _factory.createEntityManager();
 		em.getTransaction().begin();
@@ -382,7 +392,7 @@ public class UserResource {
 	 */
 	@DELETE
 	@Path("/user/{name}/inventory/{item}")
-	@Consumes("application/xml")
+	@Consumes({"application/xml","application/json"})
 	public Response deleteUserInventoryItem(@PathParam("name") String username, @PathParam("item") String itemName) {
 		EntityManager em = _factory.createEntityManager();
 		em.getTransaction().begin();
@@ -405,9 +415,14 @@ public class UserResource {
 	}
 	
 	
+	/**
+	 * Creates a server with supplied details.
+	 * @param dtoServer
+	 * @return
+	 */
 	@POST
 	@Path("/server")
-	@Consumes("application/xml")
+	@Consumes({"application/xml","application/json"})
 	public Response createServer(ServerDTO dtoServer) {
 		Server server = null;
 		try {
@@ -420,67 +435,58 @@ public class UserResource {
 		} catch (PersistenceException e) {
 			return Response.status(400).entity(e.getMessage()).build();
 		}
+		for (AsyncResponse response: responses) {
+			response.resume(dtoServer);
+		}
+		responses.clear();
 		return Response.created(URI.create("/server/" + server.getName())).build();
 	}
 	
+	/**
+	 * retrieves a servers details
+	 * @param serverName
+	 * @return
+	 */
 	@GET
 	@Path("/server/{name}")
-	@Produces("application/xml")
+	@Produces({"application/xml","application/json"})
 	public ServerDTO getServer(@PathParam("name") String serverName) {
 		Server server = PersistenceManager.getServerByName(serverName);
 		ServerDTO dtoServer = ServerMapper.toDto(server);
 		return dtoServer;
 	}
 	
+	/**
+	 * An asynchronous method which notifies the caller when a server is available
+	 * @param response
+	 */
 	@GET
 	@Path("/connect")
-	@Produces("application/xml")
+	@Produces({"application/xml","application/json"})
 	public void waitForAvailableServer(@Suspended AsyncResponse response) {
 		responses.add(response);
-		pollServerAvailablity();
 	}
 	
-	private boolean currentlyPolling = false;
 	
-	private void pollServerAvailablity() {
-		if (!currentlyPolling) {
-			new Thread() {
-				public void run() {
-					while (true) {
-						List<Server> serverList = PersistenceManager.getAllServers();
-						for (Server server : serverList) {
-							if (server.getOnlineUsers().size() < server.getCapacity()) {
-								notifyResponses(server);
-								return;
-							}
-						}
-						try {
-							Thread.sleep(1000);
-						} catch (InterruptedException e) {
-							e.printStackTrace();
-						}
-					}
-					
-				}
-			}.start();
-		}
-	}
-	
-	private void notifyResponses(Server server) {
-		for (AsyncResponse response: responses) {
-			response.resume(ServerMapper.toDto(server));
-		}
-		responses.clear();
-		currentlyPolling = false;
-	}
-		
-	@POST
+	/**
+	 * Connects a user to a given server.
+	 * An attached cookie contains any server passwords that are required.
+	 * @param username
+	 * @param password
+	 * @param dtoServer
+	 * @return
+	 */
+	@PUT
 	@Path("/user/{name}/connect")
-	@Produces("application/xml")
-	public Response connectToServer(@PathParam("name") String username, ServerDTO dtoServer) {
-		List<Server> serverList = PersistenceManager.getAllServers();
+	@Produces({"application/xml","application/json"})
+	public Response connectToServer(@PathParam("name") String username, @CookieParam("serverPassword") String password, ServerDTO dtoServer) {
 		EntityManager em = _factory.createEntityManager();
 		Server server = em.find(Server.class,PersistenceManager.getServerByName(dtoServer.getName()).getId());
+		if (server.getPassword() != null) {
+			if (!server.getPassword().equals(password)) {
+				return Response.status(401).build();
+			}
+		}
 		if (server.getOnlineUsers().size() < server.getCapacity()) {
 			em.getTransaction().begin();
 			User user = em.find(User.class, PersistenceManager.getUserByName(username).getId());
@@ -494,10 +500,13 @@ public class UserResource {
 		}
 	}
 	
-	
-	@POST
-	@Path("/user/{name}/disconnect")
-	@Consumes("application/xml")
+	/**
+	 * Disconnects a user from its server
+	 * @param username
+	 */
+	@DELETE
+	@Path("/user/{name}/connect")
+	@Consumes({"application/xml","application/json"})
 	public void disconnectFromServer(@PathParam("name") String username) {
 		EntityManager em = _factory.createEntityManager();
 		User user = em.find(User.class, PersistenceManager.getUserByName(username).getId());
@@ -505,10 +514,15 @@ public class UserResource {
 		if (server == null) {
 			throw new WebApplicationException(404);
 		} else {
+			em.getTransaction().begin();
 			user.setServer(null);
+			em.persist(user);
+			em.getTransaction().commit();
+			em.close();
 			for (AsyncResponse response: responses) {
 				response.resume(ServerMapper.toDto(server));
 			}
+			responses.clear();
 		}
 	}
 	

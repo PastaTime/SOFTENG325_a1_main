@@ -8,14 +8,14 @@ import io.dynam.game.dto.ServerDTO;
 public class ServerMapper {
 	public static Server toDomainModel(ServerDTO dtoServer) {
 		Server fullServer = new Server(dtoServer.getId(), dtoServer.getName(),
-				dtoServer.getCapacity());
+				dtoServer.getCapacity(), dtoServer.getPassword());
 
 		return fullServer;
 	}
 	
 	public static ServerDTO toDto(Server server) {
 		ServerDTO dtoServer = new ServerDTO(server.getName(),
-				server.getCapacity());
+				server.getCapacity(), server.getPassword());
 		return dtoServer;
 	}
 }

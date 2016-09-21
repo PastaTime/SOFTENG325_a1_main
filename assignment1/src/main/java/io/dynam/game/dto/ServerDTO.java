@@ -16,15 +16,27 @@ public class ServerDTO {
 	@XmlElement(name="capacity")
 	private int _capacity;
 	
+	@XmlElement(name="pass")
+	private String _password;
+	
 	protected ServerDTO() {}
 	
-	public ServerDTO(String name) {
-		this(name,10);
+	public ServerDTO(String name, String password) {
+		this(name,10,password);
 	}
 	
 	public ServerDTO(String name, int capacity) {
+		this(name,capacity,null);
+	}
+	
+	public ServerDTO(String name) {
+		this(name,10,null);
+	}
+	
+	public ServerDTO(String name, int capacity, String password) {
 		_name =  name;
 		_capacity = capacity;
+		_password = password;
 	}
 	
 	public int getId() {
@@ -50,6 +62,14 @@ public class ServerDTO {
 	
 	public void setCapacity(int capacity) {
 		_capacity = capacity;
+	}
+	
+	public String getPassword() {
+		return _password;
+	}
+	
+	public void setPassword(String password) {
+		_password = password;
 	}
 	
 

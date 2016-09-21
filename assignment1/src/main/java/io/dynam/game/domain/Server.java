@@ -13,14 +13,18 @@ public class Server {
 	private String _name;
 	private int _capacity;
 	
+	@Column(name = "PASSWORD", nullable = true)
+	private String _password;
+	
 	@OneToMany(mappedBy="_server")
 	private Set<User> _online;
 
 	protected Server() {}
-
+	
 	public Server(String name, int capacity) {
 		_id = 0;
 		_name = name;
+		_password = null;
 		_capacity = capacity;
 	}
 	
@@ -30,12 +34,27 @@ public class Server {
 		_capacity = capacity;
 	}
 	
+	public Server(int id, String name, int capacity, String password) {
+		_id = id;
+		_name = name;
+		_capacity = capacity;
+		_password = password;
+	}
+	
 	public String getName() {
 		return _name;
 	}
 	
 	public void setName(String name) {
 		_name = name;
+	}
+	
+	public String getPassword() {
+		return _password;
+	}
+	
+	public void setPassword(String password) {
+		_password = password;
 	}
 	
 	public int getCapacity() {

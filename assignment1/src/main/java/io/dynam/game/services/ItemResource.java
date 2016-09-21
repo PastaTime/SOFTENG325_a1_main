@@ -65,12 +65,8 @@ import org.slf4j.LoggerFactory;
  * 			retrieves the contents of a mysterybox
  * - DEL	<base-uri>/item/mysterybox/{name}
  * 			Deletes a mystery box by name
- * - DEL	<base-uri>/item/mystery
- * 			Deletes all mystery boxs
  * - DEL	<base-uri>/item/cosmetic/{name
  * 			Deletes a cosmetic by name
- * - DEL	<base-uri>/item/cosmetic
- * 			Deletes all cosmetics
  * - DEL	<base-uri>/item
  * 			Deletes all items
  * 
@@ -104,15 +100,20 @@ public class ItemResource {
 	
 	@GET
 	@Path("/item/cosmetic/{name}")
-	@Produces("application/xml")
-	public CosmeticDTO getCosmeticItem(@PathParam("name") String itemName) {
-		Cosmetic cosmetic = PersistenceManager.getCosmeticByName(itemName);
-		return CosmeticMapper.toDto(cosmetic);
+	@Produces({"application/xml","application/json"})
+	public Response getCosmeticItem(@PathParam("name") String itemName) {
+		Cosmetic cosmetic = null;
+		try {
+			cosmetic = PersistenceManager.getCosmeticByName(itemName);
+		} catch (WebApplicationException e) {
+			return Response.noContent().build();
+		}
+		return Response.ok().entity(CosmeticMapper.toDto(cosmetic)).build();
 	}
 	
 	@GET
 	@Path("/item/mysterybox/{name}")
-	@Produces("application/xml")
+	@Produces({"application/xml","application/json"})
 	public MysteryBoxDTO getMysteryBox(@PathParam("name") String boxName) {
 		MysteryBox mysteryBox = PersistenceManager.getMysteryBoxByName(boxName);
 		return MysteryBoxMapper.toDto(mysteryBox);
@@ -120,7 +121,7 @@ public class ItemResource {
 	
 	@POST
 	@Path("/item/cosmetic")
-	@Consumes("application/xml")
+	@Consumes({"application/xml","application/json"})
 	public Response createCosmeticItem(CosmeticDTO dtoCosmetic) {
 		EntityManager em = _factory.createEntityManager();
 		Cosmetic cosmetic = CosmeticMapper.toDomainModel(dtoCosmetic);
@@ -175,7 +176,7 @@ public class ItemResource {
 	
 	@POST
 	@Path("/item/mysterybox")
-	@Consumes("application/xml")
+	@Consumes({"application/xml","application/json"})
 	public Response createMysteryBox(MysteryBoxDTO dtoMysteryBox) {
 		
 		EntityManager em = _factory.createEntityManager();
@@ -193,7 +194,7 @@ public class ItemResource {
 	
 	@POST
 	@Path("/item/mysterybox/{name}")
-	@Consumes("application/xml")
+	@Consumes({"application/xml","application/json"})
 	public Response postCosmeticToMysteryBox(@PathParam("name") String boxName, CosmeticDTO dtoCosmetic) {
 		
 		EntityManager em = _factory.createEntityManager();
@@ -212,7 +213,7 @@ public class ItemResource {
 	
 	@GET
 	@Path("/item/mysterybox/{name}/contents")
-	@Produces("application/xml")
+	@Produces({"application/xml","application/json"})
 	public List<CosmeticDTO> getMysteryBoxContents(@PathParam("name") String boxName, @QueryParam("search") String optionalSearch) {		
 		if (optionalSearch == null) {
 			List<Cosmetic> content = PersistenceManager.getMysteryBoxContents(boxName);

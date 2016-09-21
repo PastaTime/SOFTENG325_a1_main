@@ -35,7 +35,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Ignore
 public class ItemResourceTest {
 
 	private static String WEB_SERVICE_URI = "http://localhost:10000/services/game";

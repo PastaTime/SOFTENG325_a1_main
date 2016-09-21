@@ -12,9 +12,11 @@ import io.dynam.game.dto.UserDTO;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import javax.ws.rs.NotFoundException;
+import javax.ws.rs.PUT;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -71,7 +73,6 @@ public class UserResourceTest {
 		_client.close();
 	}
 	
-	/*
 	@Test
 	public void testSingleInventoryPostAndDelete() {
 		_logger.info("Testing single post and get to user inventory...");
@@ -205,7 +206,7 @@ public class UserResourceTest {
 		_logger.info("Testing single post and get to user inventory...");
 		_logger.info("[1] Posting User...");
 		UserDTO dtoUser = new UserDTO("Arran","Password");
-		Response response = _client.target(WEB_SERVICE_URI + "/user").request().post(Entity.xml(dtoUser));
+		Response response = _client.target(WEB_SERVICE_URI + "/user").request().post(Entity.json(dtoUser));
 		int status = response.getStatus();
 		if (status != 201) {
 			_logger.error("Failed to post User; Web service responded with: "
@@ -216,7 +217,7 @@ public class UserResourceTest {
 		_logger.info("[2] Posting Item...");
 		CosmeticDTO dtoCosmetic = new CosmeticDTO("Test", "Test_asset_name");
 		_logger.info(">>>" + dtoCosmetic.toString());
-		response = _client.target(WEB_SERVICE_URI + "/item/cosmetic").request().post(Entity.xml(dtoCosmetic));
+		response = _client.target(WEB_SERVICE_URI + "/item/cosmetic").request().post(Entity.json(dtoCosmetic));
 		status = response.getStatus();
 		if (status != 201) {
 			_logger.error("Failed to post Item; Web service responded with: "
@@ -449,7 +450,7 @@ public class UserResourceTest {
 			}
 		}
 	}
-	*/
+	
 	@Test
 	public void testServerConnection() {
 		_logger.info("[1] Posting...");
@@ -481,36 +482,76 @@ public class UserResourceTest {
 		}
 		response.close();
 		
-		_logger.info("[3] Getting available Server...");
+		_logger.info("[3] Attempting to connect to server...");
 		
 		for (UserDTO dtoUser : dtoUserList) {
-			_client.close();
-			_client = ClientBuilder.newClient();
-			_client.target(WEB_SERVICE_URI + "/connect").request().async().get(new InvocationCallback<ServerDTO>() {
-				@Override
-				public void completed(ServerDTO dtoServer) {
-					_logger.info("Received aysnc Server: " + dtoServer.getName());
-					_logger.info("[4] Calling server post test..");
-					testPostToServer(dtoServer, dtoUser);
-				}
+			response =  _client.target(WEB_SERVICE_URI + "/user/" + dtoUser.getName() + "/connect").request().put(Entity.xml(dtoServer));
+			status = response.getStatus();
+			if (status == 200) {
+				_logger.info("Successfully connected User: " + dtoUser.getName() + " to Server: " + dtoServer.getName());
+			} else if (status == 303) {
+				_logger.info("Servers are full");
+				_logger.info("[4] Waiting for server availablity...");
+				Client futureClient = ClientBuilder.newClient();
+				Future<ServerDTO> futureResponse = futureClient.target(WEB_SERVICE_URI + "/connect").request().async().get(new InvocationCallback<ServerDTO>() {
+					@Override
+					public void completed(ServerDTO dtoServer) {
+						_logger.info("Received aysnc Server: " + dtoServer.getName());
+						_logger.info("[4] Calling server post test..");
+						testPostToServer(dtoServer, dtoUser);
+						futureClient.close();
+					}
 
-				@Override
-				public void failed(Throwable arg0) {
-				}
-				
-			});
+					@Override
+					public void failed(Throwable e) {
+						_logger.error("Failed");
+						e.printStackTrace();
+					}
+				});
+			} else {
+				_logger.error("Failed to connect to Server; Web service responded with: "
+						+ status);
+				fail();
+			}
+			response.close();
+			
 		}
+		
+		_logger.info("[5] Posting new server....");
+		
+		ServerDTO dtoServerNew = new ServerDTO("AdditionalServer",3);
+		
+		response =  _client.target(WEB_SERVICE_URI + "/server").request().post(Entity.xml(dtoServerNew));
+		status = response.getStatus();
+		if (status != 201) {
+			_logger.error("Failed to post Server; Web service responded with: "
+					+ status);
+			fail();
+		}
+		response.close();
+		
+		try {
+			Thread.sleep(3000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		
+		
 		
 	}
 	
 	private void testPostToServer(ServerDTO serverDTO, UserDTO userDTO) {
 		_logger.info("<1> Attempting to connect to server..");
-		Response response =  _client.target(WEB_SERVICE_URI + "/user/" + userDTO.getName() + "/connect").request().post(Entity.xml(serverDTO));
+		Client client = ClientBuilder.newClient();
+		Response response =  client.target(WEB_SERVICE_URI + "/user/" + userDTO.getName() + "/connect").request().put(Entity.xml(serverDTO));
 		int status = response.getStatus();
-		if (status != 201) {
+		if (status != 200) {
 			_logger.error("User: " + userDTO.toString() + "Was denied entry to server.");
+		} else  {
+			_logger.info("Successfully connected User: " + userDTO.getName() + " to Server: " + serverDTO.getName());
 		}
 		response.close();
+		client.close();
 	}
 	
 }
