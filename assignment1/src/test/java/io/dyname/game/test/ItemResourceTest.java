@@ -63,7 +63,6 @@ public class ItemResourceTest {
 		_client.close();
 	}
 	
-	@Ignore
 	@Test
 	public void testCosmeticSinglePostAndGet() {
 		_logger.info("Testing single cosmetic post and get....");
@@ -85,7 +84,6 @@ public class ItemResourceTest {
 		assertEquals(dtoCosmetic.getInternalName(),foundCosmetic.getInternalName());
 	}
 	
-	@Ignore
 	@Test
 	public void testMysteryBoxSinglePostAndGet() {
 		_logger.info("Testing single MysteryBox post and get....");
@@ -106,7 +104,6 @@ public class ItemResourceTest {
 		assertEquals(dtoMysteryBox.getName(),foundMysteryBox.getName());
 	}
 	
-	@Ignore
 	@Test
 	public void testMysteryBoxWithContentsPostAndGet() {
 		_logger.info("Testing single MysteryBox post and get....");
@@ -150,7 +147,6 @@ public class ItemResourceTest {
 		assertEquals(dtoCosmetic.getInternalName(), foundMysteryBoxContents.get(0).getInternalName());
 	}
 	
-	@Ignore
 	@Test
 	public void deleteAllItems() {
 		_logger.info("Testing delete all items....");

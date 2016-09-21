@@ -114,9 +114,14 @@ public class ItemResource {
 	@GET
 	@Path("/item/mysterybox/{name}")
 	@Produces({"application/xml","application/json"})
-	public MysteryBoxDTO getMysteryBox(@PathParam("name") String boxName) {
-		MysteryBox mysteryBox = PersistenceManager.getMysteryBoxByName(boxName);
-		return MysteryBoxMapper.toDto(mysteryBox);
+	public Response getMysteryBox(@PathParam("name") String boxName) {
+		MysteryBox mysteryBox = null;
+		try {
+			mysteryBox = PersistenceManager.getMysteryBoxByName(boxName);
+		} catch (WebApplicationException e) {
+			return Response.noContent().build();
+		}
+		return Response.ok().entity(MysteryBoxMapper.toDto(mysteryBox)).build();
 	}
 	
 	@POST
